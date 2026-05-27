@@ -319,7 +319,21 @@ def build_config():
             "Arguments": "",
             "LoadEarly": False,
         },
+        {
+            # Driver HFS+ (binario de Apple): necesario para leer el volumen
+            # HFS+ del BaseSystem.dmg del recovery/instalador. Sin el, OpenCore
+            # monta el DMG pero no puede leer boot.efi y rebota al picker.
+            "Path": "HfsPlus.efi",
+            "Enabled": True,
+            "Comment": "HFS+ (recovery/instalador)",
+            "Arguments": "",
+            "LoadEarly": False,
+        },
     ]
+
+    # Necesario al cargar drivers de sistema de archivos (HfsPlus.efi): conecta
+    # los drivers a los volumenes tras cargarlos. ocvalidate lo exige.
+    template["UEFI"]["ConnectDrivers"] = True
 
     template["UEFI"]["APFS"].update({
         "EnableJumpstart": True,
