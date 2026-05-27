@@ -1,0 +1,21 @@
+# Binarios grandes y descargables — se regeneran con los scripts de macos/
+macos/tools/
+macos/recovery/
+macos/kexts/
+
+# Logs de los scripts
+macos/*.log
+
+# Configs viejos de OCAT (el config real vive en macos/EFI/OC/config.plist)
+macos/config.plist
+macos/oldConfig.plist
+
+# Backups automáticos del generador de config
+macos/EFI/OC/config_backup_*.plist
+
+# Fotos de diagnóstico del arranque
+macos/*.jpeg
+macos/*.jpg
+
+# Runtime / caché de claude-flow
+.claude-flow/
