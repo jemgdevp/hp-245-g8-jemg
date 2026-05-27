@@ -31,6 +31,8 @@ PHYSICAL_CORES = 4
 
 KEXTS = [
     ("Lilu",        "x86_64", "",      "",      False),
+    # Codeless: evita panics de AppleMCEReporter en AMD ≥ macOS 12.3
+    ("AppleMCEReporterDisabler", "x86_64", "", "", True),
     ("VirtualSMC",  "x86_64", "",      "",      False),
     ("SMCBatteryManager", "x86_64", "", "",    False),
     ("SMCProcessor",   "x86_64", "",    "",     False),
@@ -378,6 +380,8 @@ def build_config():
     print("  NEXT:")
     print("    Copy EFI/ to USB and boot.")
     print(f"    ocvalidate at: {TOOLS}/OpenCorePkg/Utilities/ocvalidate/")
+    print("  INSTALACIÓN: en config.plist poner NootedRed Enabled=False hasta")
+    print("    terminar de instalar macOS; luego Enabled=True (Fase 2).")
     return 0
 
 

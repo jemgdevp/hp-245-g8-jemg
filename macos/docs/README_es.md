@@ -72,6 +72,8 @@ bash scripts/04_generate_config.sh
 ## Notas importantes
 
 - **NootedRed** reemplaza a WhateverGreen. NO usar ambas.
+- Durante la **instalación** de macOS, dejar `NootedRed.kext` con `Enabled=False` en `config.plist` (framebuffer básico); activarlo tras instalar (Fase 2).
+- **AppleMCEReporterDisabler.kext** (codeless) recomendado en AMD ≥ macOS 12.3.
 - El WiFi RTL8822CE no funciona en macOS. Ver `docs/wifi_rtl8822ce.md`
 - El archivo `config.plist` se genera con OCAT (paso 4).
   No lo edites manualmente a menos que sepas lo que haces.
