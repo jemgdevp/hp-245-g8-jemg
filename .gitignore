@@ -15,6 +15,12 @@ macos/docs/hp-245-g8-efi-base/OpenCore.efi
 macos/docs/hp-245-g8-efi-base/**/MacOS/
 macos/docs/hp-245-g8-efi-base/**/_CodeSignature/
 
+# Herramientas externas clonadas (tienen su propio .git, ~13 MB). Se usan como
+# referencia local; el perfil de hardware se conserva en macos/docs/Report.json.
+macos/docs/OpCore-Simplify/
+macos/docs/Hardware-Sniffer/
+macos/acpi_dump/
+
 # Logs de los scripts
 macos/*.log
 
