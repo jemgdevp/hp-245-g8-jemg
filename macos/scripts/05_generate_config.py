@@ -71,8 +71,12 @@ KEXTS = [
 #                                interno (eDP). Arregla pantalla negra/reinicio
 #                                del framebuffer interno en laptops Renoir.
 BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 revblock=media revpatch=cpuname,memtab,sbvmm alcid=1 -NRedDPDelay"
-CPUID1_DATA = bytes.fromhex("EA060900000000000000000000000000")
-CPUID1_MASK = bytes.fromhex("FFFFFFFF000000000000000000000000")
+# Cpuid1Data VACÍO: en AMD los parches AMD_Vanilla ya fijan la familia de CPU.
+# Inyectar un Cpuid1Data spoofeado de Intel ENCIMA de esos parches provoca un
+# kernel panic tempranísimo (negro + reinicio sin verbose). El EFI de referencia
+# del mismo HP 245 G8 arranca con Cpuid1Data/Mask vacíos.
+CPUID1_DATA = b""
+CPUID1_MASK = b""
 import base64
 
 CSR_ACTIVE = base64.b64decode("AwgAAA==")
@@ -220,6 +224,7 @@ def build_config():
         "CustomSMBIOSGuid": False,
         "DisableIoMapper": False,
         "DisableLinkeditJettison": True,
+        "LapicKernelPanic": True,   # AMD: evita panic por LAPIC; la ref lo usa
         "PanicNoKextDump": True,
         "PowerTimeoutKernelPanic": True,
         "ProvideCurrentCpuInfo": True,  # AMD: MSR/CPUID correctos al kernel

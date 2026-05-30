@@ -3,6 +3,17 @@ macos/tools/
 macos/recovery/
 macos/recovery_ventura/
 macos/kexts/
+macos/kexts_update/
+
+# EFI de referencia (HP 245 G8 Ryzen 5 5500U): versionar solo lo útil para
+# comparar (config.plist, README, ACPI/*.aml, Info.plist de kexts). El resto
+# son binarios pesados (~29 MB) que no aportan al diagnóstico.
+macos/docs/hp-245-g8-efi-base/Resources/
+macos/docs/hp-245-g8-efi-base/Drivers/
+macos/docs/hp-245-g8-efi-base/Tools/
+macos/docs/hp-245-g8-efi-base/OpenCore.efi
+macos/docs/hp-245-g8-efi-base/**/MacOS/
+macos/docs/hp-245-g8-efi-base/**/_CodeSignature/
 
 # Logs de los scripts
 macos/*.log
