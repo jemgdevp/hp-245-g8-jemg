@@ -68,3 +68,18 @@ OpenCore 1.0.7 + NootedRed. Cada entrada = una causa raíz hallada y corregida.
   USB mapping (UTBDefault genérico) / NVMe Kingston NV3 / probar `npci=0x2000`.
 - Errores ACPI en la foto (`AE_ALREADY_EXISTS` _Q50/_CRS, "3 table load failures,
   28 successful"): benignos; SSDT-HPET no carga sin su parche `_CRS→XCRS` (no crítico).
+
+## Sesión 2026-05-30 (cont. 2) — workflow de recuento + alinear parches PCI
+- Workflow de 5 agentes (auditoría repo + 2 investigaciones web + comparación REF + síntesis).
+- Hallazgo: el cuelgue en `pci flags 0xc000` se ataca alineando los parches Kernel con
+  la EFI de referencia (azurejelly, mismo modelo, que arranca), NO tocando MMIO.
+- Cambios (commits `99255a5`, `1d38278`, `6f8a3c2`):
+  - `IOPCIIsHotplugPort` (AM5, escritorio) -> OFF (igual que la ref).
+  - `probeBusGated` -> ON (la ref lo tiene ON).
+  - `_mtrr_update_action`: de 4 ON a EXACTO de la ref -> shaneee(17-23)=ON,
+    algrey(17-23)=OFF, algrey(24+)=ON, shaneee(24+)=OFF. Elimina el doble parche
+    sobre el mismo patrón PAT/MTRR (conflicto, posible causa del cuelgue temprano).
+  - npci de vuelta a 0x3000 (las 3 EFIs que arrancan lo usan).
+- ResizeAppleGpuBars=-1, ResizeGpuBars=-1, DeviceProperties iGPU vacío: ya correctos.
+- Kernel>Patch ahora IDÉNTICO a la referencia. Pendiente probar arranque.
+- Si AÚN cuelga en PCI: `nvme=-1` (descartar Kingston NV3 DRAM-less) + USB en puerto 2.0.
