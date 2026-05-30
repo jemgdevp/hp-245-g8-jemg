@@ -250,9 +250,9 @@
 				<key>BundlePath</key>
 				<string>NootedRed.kext</string>
 				<key>Comment</key>
-				<string>NootedRed install off</string>
+				<string>NootedRed</string>
 				<key>Enabled</key>
-				<false/>
+				<true/>
 				<key>ExecutablePath</key>
 				<string>Contents/MacOS/NootedRed</string>
 				<key>MaxKernel</key>

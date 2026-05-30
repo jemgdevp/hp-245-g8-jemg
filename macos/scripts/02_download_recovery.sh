@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # ============================================================
-# 02_download_recovery.sh — Descargar macOS Sonoma Recovery
+# 02_download_recovery.sh — Descargar macOS Ventura Recovery
 # Proyecto: EFI Hackintosh Ryzen 3 5300U (Renoir/Lucienne)
-# Modelo:   Mac-937A206F2EE63C01 → macOS 14 Sonoma
+# Modelo:   Mac-4B682C642B45593E → macOS 13 Ventura (más estable con NootedRed
+#           en Renoir/Lucienne que Sonoma/Sequoia).
+# Nota: Mac-937A206F2EE63C01 ya NO da Sonoma sino Sequoia 15.x.
 # ============================================================
 set -euo pipefail
 
@@ -21,7 +23,7 @@ PROJECT_ROOT="$(pwd)"
 > "$LOG_FILE"
 
 echo "===============================" | tee -a "$LOG_FILE"
-echo " macOS Sonoma Recovery Download" | tee -a "$LOG_FILE"
+echo " macOS Ventura Recovery Download" | tee -a "$LOG_FILE"
 echo " Fecha: $(date)" | tee -a "$LOG_FILE"
 echo "===============================" | tee -a "$LOG_FILE"
 
@@ -43,14 +45,15 @@ if [ ! -f "$RECOVERY_FILE" ]; then
     exit 1
 fi
 
-log "Descargando macOS Sonoma (Mac-937A206F2EE63C01) desde servidores Apple..."
+log "Descargando macOS Ventura (Mac-4B682C642B45593E) desde servidores Apple..."
 log "Esto puede tomar varios minutos dependiendo de tu conexión."
 
 cd "$RECOVERY_DIR"
 
-# Mac-937A206F2EE63C01 = macOS 14 Sonoma
+# Mac-4B682C642B45593E = macOS 13 Ventura (el que usamos)
+# Nota: Mac-937A206F2EE63C01 hoy entrega Sequoia 15.x, no Sonoma.
 python3 macrecovery.py \
-    -b Mac-937A206F2EE63C01 \
+    -b Mac-4B682C642B45593E \
     -m 00000000000000000 \
     download \
     2>&1 | tee -a "$LOG_FILE"

@@ -39,6 +39,10 @@ KEXTS = [
     ("SMCSuperIO",     "x86_64", "",    "",     False),
     ("SMCLightSensor", "x86_64", "",    "",     False),
     ("SMCDellSensors", "x86_64", "",    "",     False),
+    # NootedRed NO se desactiva durante la instalación: Renoir/Lucienne NO tiene
+    # framebuffer básico en macOS; sin este kext no hay imagen tras ExitBootServices
+    # (pantalla negra). El generador lo deja Enabled=True como todos; el 5º campo es
+    # noexec (False = tiene binario en Contents/MacOS, no es codeless).
     ("NootedRed",      "x86_64", "",    "",     False),
     ("AppleALC",       "x86_64", "",    "",     False),
     ("AppleALCU",      "x86_64", "23.0.0", "", False),
@@ -393,8 +397,8 @@ def build_config():
     print("  NEXT:")
     print("    Copy EFI/ to USB and boot.")
     print(f"    ocvalidate at: {TOOLS}/OpenCorePkg/Utilities/ocvalidate/")
-    print("  INSTALACIÓN: en config.plist poner NootedRed Enabled=False hasta")
-    print("    terminar de instalar macOS; luego Enabled=True (Fase 2).")
+    print("  NootedRed va ACTIVADO desde la instalación (Renoir no tiene")
+    print("    framebuffer básico; sin él la pantalla queda negra).")
     return 0
 
 

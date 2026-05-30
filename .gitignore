@@ -1,6 +1,7 @@
 # Binarios grandes y descargables — se regeneran con los scripts de macos/
 macos/tools/
 macos/recovery/
+macos/recovery_ventura/
 macos/kexts/
 
 # Logs de los scripts
