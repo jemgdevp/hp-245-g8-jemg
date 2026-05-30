@@ -208,9 +208,13 @@ def build_config():
     # \_SB.P000 (_HID ACPI0007), no PR00; el PLUG-ALT del EFI de referencia (5500U)
     # apuntaba a PR00 inexistente. SSDT-PLUG.aml se regeneró para P000 (ver
     # acpi_src/SSDT-PLUG.dsl) y se validó contra docs/DSDT.aml.
+    # SSDT-USB-Reset: desactiva los RHUB de XHC0/XHC1 bajo Darwin para que macOS
+    # re-enumere el USB desde cero. Fix del cuelgue en la enumeración USB/PCI
+    # (freeze tras AppleKeyStoreTest). Paths validados contra docs/DSDT.aml:
+    # \_SB.PCI0.GP17.XHC0.RHUB y XHC1.RHUB (sin _STA propio -> sin parche XSTA).
     ACPI_SSDTS = [
         "SSDT-ALS0", "SSDT-EC", "SSDT-GPRW", "SSDT-HPET", "SSDT-PLUG",
-        "SSDT-PMC", "SSDT-PNLF", "SSDT-USBX", "SSDT-XOSI",
+        "SSDT-PMC", "SSDT-PNLF", "SSDT-USBX", "SSDT-XOSI", "SSDT-USB-Reset",
     ]
     template["ACPI"]["Add"] = [
         {"Comment": s, "Enabled": True, "Path": f"{s}.aml"} for s in ACPI_SSDTS
