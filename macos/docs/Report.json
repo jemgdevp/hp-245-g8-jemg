@@ -1,0 +1,454 @@
+{
+    "Motherboard": {
+        "Name": "HP HP 245 G8 NOTEBOOK PC",
+        "Chipset": "AMD",
+        "Platform": "Laptop"
+    },
+    "BIOS": {
+        "Version": "F.30",
+        "Release Date": "09/24/2024",
+        "Firmware Type": "UEFI",
+        "Secure Boot": "Disabled",
+        "Above 4G Decoding": "Disabled"
+    },
+    "CPU": {
+        "Manufacturer": "AMD",
+        "Processor Name": "AMD Ryzen 3 5300U",
+        "Codename": "Lucienne",
+        "Core Count": "08",
+        "CPU Count": "01",
+        "SIMD Features": "SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, SSE4a, AVX, AVX2"
+    },
+    "GPU": {
+        "Advanced Micro Devices, Inc. [AMD/ATI] Lucienne": {
+            "Manufacturer": "AMD",
+            "Codename": "Lucienne",
+            "Device Type": "Integrated GPU",
+            "Bus Type": "PCI",
+            "Device ID": "1002-164C",
+            "Subsystem ID": "8908103C",
+            "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x0)",
+            "ACPI Path": "\\_SB.PCI0.GP17.VGA_",
+            "Resizable BAR": "Disabled"
+        }
+    },
+    "Monitor": {
+        "CMN142C": {
+            "Connector Type": "eDP",
+            "Resolution": "1366x768",
+            "Connected GPU": "Advanced Micro Devices, Inc. [AMD/ATI] Lucienne"
+        }
+    },
+    "Network": {
+        "Realtek Semiconductor Co., Ltd. RTL8822CE 802.11ac PCIe Wireless Network Adapter": {
+            "Bus Type": "PCI",
+            "Device ID": "10EC-C822",
+            "Subsystem ID": "85F7103C"
+        }
+    },
+    "Sound": {
+        "Realtek ALC236": {
+            "Bus Type": "HDAUDIO",
+            "Device ID": "10EC-0236",
+            "Subsystem ID": "103C8908",
+            "Controller Device ID": "1022-15E3",
+            "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x6)",
+            "ACPI Path": "\\_SB.PCI0.GP17.AZAL",
+            "Audio Endpoints": [
+                "ALC236 Analog"
+            ]
+        },
+        "ATI R6xx HDMI": {
+            "Bus Type": "HDAUDIO",
+            "Device ID": "1002-AA01",
+            "Subsystem ID": "AA0100",
+            "Controller Device ID": "1002-1637"
+        },
+        "Realtek Semiconductor Corp. Bluetooth Radio": {
+            "Bus Type": "USB",
+            "Device ID": "0BDA-B00C"
+        }
+    },
+    "USB Controllers": {
+        "Advanced Micro Devices, Inc. [AMD] Renoir/Cezanne USB 3.1": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-1639",
+            "Subsystem ID": "8908103C",
+            "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x3)",
+            "ACPI Path": "\\_SB.PCI0.GP17.XHC0"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Renoir/Cezanne USB 3.1_#1": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-1639",
+            "Subsystem ID": "8908103C",
+            "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x4)",
+            "ACPI Path": "\\_SB.PCI0.GP17.XHC1"
+        }
+    },
+    "Input": {
+        "HP WMI hotkeys": {
+            "Bus Type": "ACPI",
+            "Device": "HPWMIHOT",
+            "Device Type": "Keyboard"
+        },
+        "ELAN0708:00 04F3:31BF Mouse": {
+            "Bus Type": "ACPI",
+            "Device ID": "04F3-31BF",
+            "Device Type": "I2C"
+        },
+        "Pebble K380s": {
+            "Bus Type": "USB",
+            "Device ID": "046D-B377"
+        },
+        "AT Translated Set 2 keyboard": {
+            "Bus Type": "ACPI",
+            "Device ID": "0001-0001",
+            "Device Type": "PS/2"
+        },
+        "Video Bus": {
+            "Bus Type": "ACPI",
+            "Device": "VIDEOBUS",
+            "Device Type": "Keyboard"
+        },
+        "Wireless hotkeys": {
+            "Bus Type": "ACPI",
+            "Device": "WIRELESS",
+            "Device Type": "Keyboard"
+        }
+    },
+    "Storage Controllers": {
+        "Kingston Technology Company, Inc. NV3 NVMe SSD [SM2268XT2] (DRAM-less)": {
+            "Bus Type": "PCI",
+            "Device ID": "2646-5028",
+            "Subsystem ID": "50282646",
+            "PCI Path": "PciRoot(0x0)/Pci(0x2,0x4)/Pci(0x0,0x0)",
+            "Disk Drives": [
+                "KINGSTON SNV3S1000G"
+            ]
+        },
+        "Advanced Micro Devices, Inc. [AMD] FCH SATA Controller [AHCI mode]": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-7901",
+            "Subsystem ID": "8908103C",
+            "PCI Path": "PciRoot(0x0)/Pci(0x8,0x2)/Pci(0x0,0x1)",
+            "ACPI Path": "\\_SB.PCI0.GP18.SAT1",
+            "Disk Drives": [
+                "WDC WD5000BEVT-6"
+            ]
+        }
+    },
+    "Bluetooth": {
+        "Realtek Semiconductor Corp. Bluetooth Radio": {
+            "Bus Type": "USB",
+            "Device ID": "0BDA-B00C"
+        }
+    },
+    "System Devices": {
+        "PNP0C14": {
+            "Bus Type": "ACPI",
+            "Device": "PNP0C14",
+            "ACPI Path": "\\_SB.WMID"
+        },
+        "alarmtimer": {
+            "Bus Type": "PLATFORM",
+            "Device": "alarmtimer"
+        },
+        "PNP0C0D": {
+            "Bus Type": "ACPI",
+            "Device": "PNP0C0D",
+            "ACPI Path": "\\_SB.LID_"
+        },
+        "PNP0C09": {
+            "Bus Type": "ACPI",
+            "Device": "PNP0C09",
+            "ACPI Path": "\\_SB.PCI0.SBRG.EC0_"
+        },
+        "PNP0C0A": {
+            "Bus Type": "ACPI",
+            "Device": "PNP0C0A",
+            "ACPI Path": "\\_SB.BAT0"
+        },
+        "ACPI0003": {
+            "Bus Type": "ACPI",
+            "Device": "ACPI0003",
+            "ACPI Path": "\\_SB.AC__"
+        },
+        "acpi-cpufreq": {
+            "Bus Type": "PLATFORM",
+            "Device": "acpi-cpufreq"
+        },
+        "LNXTHERM": {
+            "Bus Type": "ACPI",
+            "Device": "LNXTHERM",
+            "ACPI Path": "\\_TZ_.TZ1_"
+        },
+        "LNXPWRBN": {
+            "Bus Type": "ACPI",
+            "Device": "LNXPWRBN"
+        },
+        "intel_rapl_msr": {
+            "Bus Type": "PLATFORM",
+            "Device": "intel_rapl_msr"
+        },
+        "HPQ6001": {
+            "Bus Type": "ACPI",
+            "Device": "HPQ6001",
+            "ACPI Path": "\\_SB.WLBU"
+        },
+        "USBC000": {
+            "Bus Type": "ACPI",
+            "Device": "USBC000",
+            "ACPI Path": "\\_SB.UBTC"
+        },
+        "PNP0C0C": {
+            "Bus Type": "ACPI",
+            "Device": "PNP0C0C",
+            "ACPI Path": "\\_SB.PWRB"
+        },
+        "rtc-efi": {
+            "Bus Type": "PLATFORM",
+            "Device": "rtc-efi"
+        },
+        "PNP0C14_#1": {
+            "Bus Type": "ACPI",
+            "Device": "PNP0C14",
+            "ACPI Path": "\\AOD_"
+        },
+        "sp5100-tco": {
+            "Bus Type": "PLATFORM",
+            "Device": "sp5100-tco"
+        },
+        "AMDI0010": {
+            "Bus Type": "ACPI",
+            "Device": "AMDI0010",
+            "ACPI Path": "\\_SB.I2CD"
+        },
+        "PNP0800": {
+            "Bus Type": "ACPI",
+            "Device": "PNP0800",
+            "ACPI Path": "\\_SB.PCI0.SBRG.SPKR"
+        },
+        "ACPI000E": {
+            "Bus Type": "ACPI",
+            "Device": "ACPI000E",
+            "ACPI Path": "\\_SB.ACDC"
+        },
+        "LNXTHERM_#1": {
+            "Bus Type": "ACPI",
+            "Device": "LNXTHERM",
+            "ACPI Path": "\\_TZ_.TZ0_"
+        },
+        "PNP0C0B": {
+            "Bus Type": "ACPI",
+            "Device": "PNP0C0B",
+            "ACPI Path": "\\_TZ_.FAN0"
+        },
+        "PNP0103": {
+            "Bus Type": "ACPI",
+            "Device": "PNP0103",
+            "ACPI Path": "\\HPET"
+        },
+        "AMDI0030": {
+            "Bus Type": "ACPI",
+            "Device": "AMDI0030",
+            "ACPI Path": "\\_SB.GPIO"
+        },
+        "efivars": {
+            "Bus Type": "PLATFORM",
+            "Device": "efivars"
+        },
+        "serial8250": {
+            "Bus Type": "PLATFORM",
+            "Device": "serial8250"
+        },
+        "i8042": {
+            "Bus Type": "PLATFORM",
+            "Device": "i8042"
+        },
+        "HPIC0003": {
+            "Bus Type": "ACPI",
+            "Device": "HPIC0003",
+            "ACPI Path": "\\_SB.PCI0.IC03"
+        },
+        "hp-wmi": {
+            "Bus Type": "PLATFORM",
+            "Device": "hp-wmi"
+        },
+        "pcspkr": {
+            "Bus Type": "PLATFORM",
+            "Device": "pcspkr"
+        },
+        "vboxdrv": {
+            "Bus Type": "PLATFORM",
+            "Device": "vboxdrv"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Renoir PCIe Dummy Host Bridge": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-1632",
+            "Subsystem ID": "00000000",
+            "PCI Path": "PciRoot(0x0)/Pci(0x8,0x0)",
+            "ACPI Path": "\\_SB.PCI0.P080"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Function 3": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-144B",
+            "Subsystem ID": "00000000",
+            "PCI Path": "PciRoot(0x0)/Pci(0x18,0x3)",
+            "ACPI Path": "\\_SB.PCI0.P183"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Function 1": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-1449",
+            "Subsystem ID": "00000000",
+            "PCI Path": "PciRoot(0x0)/Pci(0x18,0x1)",
+            "ACPI Path": "\\_SB.PCI0.P181"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Renoir PCIe Dummy Host Bridge_#1": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-1632",
+            "Subsystem ID": "00000000",
+            "PCI Path": "PciRoot(0x0)/Pci(0x1,0x0)",
+            "ACPI Path": "\\_SB.PCI0.P010"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Function 6": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-144E",
+            "Subsystem ID": "00000000",
+            "PCI Path": "PciRoot(0x0)/Pci(0x18,0x6)",
+            "ACPI Path": "\\_SB.PCI0.P186"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Renoir/Cezanne Root Complex": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-1630",
+            "Subsystem ID": "8908103C",
+            "PCI Path": "PciRoot(0x0)/Pci(0x0,0x0)",
+            "ACPI Path": "\\_SB.PCI0.D003"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Function 4": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-144C",
+            "Subsystem ID": "00000000",
+            "PCI Path": "PciRoot(0x0)/Pci(0x18,0x4)",
+            "ACPI Path": "\\_SB.PCI0.P184"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Function 2": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-144A",
+            "Subsystem ID": "00000000",
+            "PCI Path": "PciRoot(0x0)/Pci(0x18,0x2)",
+            "ACPI Path": "\\_SB.PCI0.P182"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Function 0": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-1448",
+            "Subsystem ID": "00000000",
+            "PCI Path": "PciRoot(0x0)/Pci(0x18,0x0)",
+            "ACPI Path": "\\_SB.PCI0.P180"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Renoir PCIe Dummy Host Bridge_#2": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-1632",
+            "Subsystem ID": "00000000",
+            "PCI Path": "PciRoot(0x0)/Pci(0x2,0x0)",
+            "ACPI Path": "\\_SB.PCI0.P020"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Function 7": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-144F",
+            "Subsystem ID": "00000000",
+            "PCI Path": "PciRoot(0x0)/Pci(0x18,0x7)",
+            "ACPI Path": "\\_SB.PCI0.P187"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Function 5": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-144D",
+            "Subsystem ID": "00000000",
+            "PCI Path": "PciRoot(0x0)/Pci(0x18,0x5)",
+            "ACPI Path": "\\_SB.PCI0.P185"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Audio Coprocessor": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-15E2",
+            "Subsystem ID": "8908103C",
+            "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x5)",
+            "ACPI Path": "\\_SB.PCI0.GP17.ACP_"
+        },
+        "Advanced Micro Devices, Inc. [AMD] FCH LPC Bridge": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-790E",
+            "Subsystem ID": "8908103C",
+            "PCI Path": "PciRoot(0x0)/Pci(0x14,0x3)",
+            "ACPI Path": "\\_SB.PCI0.SBRG"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Renoir/Cezanne IOMMU": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-1631",
+            "Subsystem ID": "8908103C",
+            "PCI Path": "PciRoot(0x0)/Pci(0x0,0x2)",
+            "ACPI Path": "\\_SB.PCI0.IOMA"
+        },
+        "Advanced Micro Devices, Inc. [AMD/ATI] Renoir/Cezanne HDMI/DP Audio Controller": {
+            "Bus Type": "PCI",
+            "Device ID": "1002-1637",
+            "Subsystem ID": "8908103C",
+            "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x1)",
+            "ACPI Path": "\\_SB.PCI0.GP17.HDAU"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Ryzen HD Audio Controller": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-15E3",
+            "Subsystem ID": "8908103C",
+            "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x6)",
+            "ACPI Path": "\\_SB.PCI0.GP17.AZAL"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Renoir Internal PCIe GPP Bridge to Bus": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-1635",
+            "Subsystem ID": "16351022",
+            "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)",
+            "ACPI Path": "\\_SB.PCI0.GP17"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Renoir/Cezanne PCIe GPP Bridge": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-1634",
+            "Subsystem ID": "14531022",
+            "PCI Path": "PciRoot(0x0)/Pci(0x2,0x4)",
+            "ACPI Path": "\\_SB.PCI0.GPP6"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Renoir/Cezanne PCIe GPP Bridge_#1": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-1634",
+            "Subsystem ID": "14531022",
+            "PCI Path": "PciRoot(0x0)/Pci(0x2,0x2)",
+            "ACPI Path": "\\_SB.PCI0.GPP4"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Renoir Internal PCIe GPP Bridge to Bus_#1": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-1635",
+            "Subsystem ID": "16351022",
+            "PCI Path": "PciRoot(0x0)/Pci(0x8,0x2)",
+            "ACPI Path": "\\_SB.PCI0.GP18"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Zeppelin/Raven/Raven2 PCIe Dummy Function": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-145A",
+            "Subsystem ID": "8908103C",
+            "PCI Path": "PciRoot(0x0)/Pci(0x8,0x2)/Pci(0x0,0x0)",
+            "ACPI Path": "\\_SB.PCI0.GP18.SATA"
+        },
+        "Advanced Micro Devices, Inc. [AMD] Raven/Raven2/FireFlight/Renoir/Cezanne Platform Security Processor": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-15DF",
+            "Subsystem ID": "8908103C",
+            "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x2)",
+            "ACPI Path": "\\_SB.PCI0.GP17.APSP"
+        },
+        "Advanced Micro Devices, Inc. [AMD] FCH SMBus Controller": {
+            "Bus Type": "PCI",
+            "Device ID": "1022-790B",
+            "Subsystem ID": "8908103C",
+            "PCI Path": "PciRoot(0x0)/Pci(0x14,0x0)",
+            "ACPI Path": "\\_SB.PCI0.D01F"
+        }
+    }
+}
