@@ -39,11 +39,15 @@ KEXTS = [
     # Codeless: evita panics de AppleMCEReporter en AMD ≥ macOS 12.3
     ("AppleMCEReporterDisabler", "x86_64", "", "", True),
     ("VirtualSMC",  "x86_64", "",      "",      False),
+    # ForgedInvariant: TSC-sync de ChefKiss (reemplaza AmdTscSync). El TSC
+    # desincronizado cuelga la fase tardía del arranque (AppleCredentialManager/
+    # AppleKeyStore). Lo usa el EFI de referencia del mismo HP 245 G8.
+    ("ForgedInvariant", "x86_64", "",  "",      False),
     ("SMCBatteryManager", "x86_64", "", "",    False),
-    ("SMCProcessor",   "x86_64", "",    "",     False),
+    # SMCProcessor (Intel-only) y SMCDellSensors (Dell) eliminados: inútiles/
+    # ruidosos en un HP con Ryzen; el log rechazaba SMCDellSensors.
     ("SMCSuperIO",     "x86_64", "",    "",     False),
     ("SMCLightSensor", "x86_64", "",    "",     False),
-    ("SMCDellSensors", "x86_64", "",    "",     False),
     # NootedRed NO se desactiva durante la instalación: Renoir/Lucienne NO tiene
     # framebuffer básico en macOS; sin este kext no hay imagen tras ExitBootServices
     # (pantalla negra). El generador lo deja Enabled=True como todos; el 5º campo es
@@ -56,7 +60,6 @@ KEXTS = [
     ("VoodooPS2Controller", "x86_64", "", "",   False),
     ("NVMeFix",        "x86_64", "",    "",     False),
     ("BrightnessKeys", "x86_64", "",    "",     False),
-    ("AmdTscSync",     "x86_64", "",    "",     False),
     ("RestrictEvents", "x86_64", "",    "",     False),
 ]
 
