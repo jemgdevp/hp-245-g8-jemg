@@ -211,11 +211,16 @@ def build_config():
     template["ACPI"]["Add"] = [
         {"Comment": s, "Enabled": True, "Path": f"{s}.aml"} for s in ACPI_SSDTS
     ]
+    # Find/Replace de 5 bytes (incluye el 0x02 = nº de args del método GPRW) y
+    # esquema COMPLETO de ACPI>Patch (Base/BaseSkip/ReplaceMask son obligatorios;
+    # sin ellos ocvalidate falla "Missing key Base/BaseSkip/ReplaceMask").
     template["ACPI"]["Patch"] = [{
+        "Base": "", "BaseSkip": 0,
         "Comment": "change GPRW to XPRW",
         "Count": 0, "Enabled": True, "Limit": 0,
-        "Find": bytes.fromhex("47505257"), "Replace": bytes.fromhex("58505257"),
-        "Mask": b"", "OemTableId": b"", "Skip": 0,
+        "Find": bytes.fromhex("4750525702"), "Replace": bytes.fromhex("5850525702"),
+        "Mask": b"", "ReplaceMask": b"",
+        "OemTableId": b"", "Skip": 0,
         "TableLength": 0, "TableSignature": b"",
     }]
 
