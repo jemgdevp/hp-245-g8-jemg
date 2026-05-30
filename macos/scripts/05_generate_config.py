@@ -51,7 +51,14 @@ KEXTS = [
     ("RestrictEvents", "x86_64", "",    "",     False),
 ]
 
-BOOT_ARGS = "-v debug=0x100 keepsyms=1 alcid=1 revpatch=sbvmm"
+# boot-args alineados con el EFI de referencia del MISMO modelo (HP 245 G8):
+#   -v keepsyms=1 debug=0x100  → verbose + símbolos en panics (diagnóstico)
+#   npci=0x3000                → evita el cuelgue en [PCI configuration begin]
+#                                (BIOS HP sin opción Above4G accesible)
+#   revblock=media             → RestrictEvents: bloquea mediaanalysisd (AMD)
+#   revpatch=cpuname,memtab,sbvmm → nombre CPU + tabla memoria + permite instalar
+#   alcid=1                    → layout de audio (inocuo durante instalación)
+BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 revblock=media revpatch=cpuname,memtab,sbvmm alcid=1"
 CPUID1_DATA = bytes.fromhex("EA060900000000000000000000000000")
 CPUID1_MASK = bytes.fromhex("FFFFFFFF000000000000000000000000")
 import base64
@@ -173,15 +180,20 @@ def build_config():
 
     template["ACPI"]["Quirks"]["ResetLogoStatus"] = True
 
+    # Esquema de memoria "legacy": el que arranca en el firmware del HP 245 G8
+    # (confirmado por el EFI de referencia del mismo modelo). El esquema moderno
+    # (RebuildAppleMemoryMap/SetupVirtualMap/SyncRuntimePermissions=True) cuelga
+    # el kernel justo tras ExitBootServices en esta placa.
     template["Booter"]["Quirks"].update({
         "AvoidRuntimeDefrag": True,
-        "DevirtualiseMmio": True,
+        "DevirtualiseMmio": False,
         "EnableSafeModeSlide": True,
+        "EnableWriteUnprotector": True,
         "ProvideCustomSlide": True,
-        "SetupVirtualMap": True,
-        "SyncRuntimePermissions": True,
-        "RebuildAppleMemoryMap": True,
-        "ResizeAppleGpuBars": 0,
+        "SetupVirtualMap": False,
+        "SyncRuntimePermissions": False,
+        "RebuildAppleMemoryMap": False,
+        "ResizeAppleGpuBars": -1,
     })
 
     template["Kernel"]["Add"] = [
@@ -192,14 +204,14 @@ def build_config():
     template["Kernel"]["Patch"] = patches or []
 
     template["Kernel"]["Quirks"].update({
-        "AppleXcpmCfgLock": True,
-        "CustomSMBIOSGuid": True,
-        "DisableIoMapper": True,
+        "AppleXcpmCfgLock": False,   # Intel-only; innecesario en AMD
+        "CustomSMBIOSGuid": False,
+        "DisableIoMapper": False,
         "DisableLinkeditJettison": True,
         "PanicNoKextDump": True,
         "PowerTimeoutKernelPanic": True,
-        "ProvideCurrentCpuInfo": True,
-        "SetApfsTrimTimeout": 999,
+        "ProvideCurrentCpuInfo": True,  # AMD: MSR/CPUID correctos al kernel
+        "SetApfsTrimTimeout": -1,
         "XhciPortLimit": False,
     })
 
@@ -221,7 +233,7 @@ def build_config():
         # 0: muestra el picker y espera selección sin auto-arrancar (evita que
         # se vaya solo a Linux). Subir a 5 tras terminar la instalación.
         "Timeout": 0,
-        "PollAppleHotKeys": True,
+        "PollAppleHotKeys": False,
     })
 
     template["Misc"]["Debug"].update({
@@ -307,7 +319,8 @@ def build_config():
 
     template["UEFI"]["Quirks"].update({
         "IgnoreInvalidFlexRatio": True,
-        "ReleaseUsbOwnership": True,
+        "ForgeUefiSupport": False,     # firmware moderno: no forzar UEFI 2.x
+        "ReleaseUsbOwnership": False,
         "RequestBootVarRouting": True,
         "ResizeGpuBars": -1,
         "DisableSecurityPolicy": True,

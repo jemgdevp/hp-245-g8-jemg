@@ -13,9 +13,13 @@ macos/oldConfig.plist
 # Backups automáticos del generador de config
 macos/EFI/OC/config_backup_*.plist
 
-# Fotos de diagnóstico del arranque
-macos/*.jpeg
-macos/*.jpg
+# Fotos de diagnóstico del arranque (también en la raíz del repo)
+*.jpeg
+*.jpg
+
+# Caché de Python
+__pycache__/
+*.pyc
 
 # Runtime / caché de claude-flow
 .claude-flow/
