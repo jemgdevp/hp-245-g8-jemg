@@ -23,3 +23,28 @@ __pycache__/
 
 # Runtime / caché de claude-flow
 .claude-flow/
+
+# ── Tooling de ruflo / claude-flow (NO es parte del proyecto Hackintosh) ──
+# Dependencias y manifiestos de Node (los trae la instalación de ruflo)
+node_modules/
+package.json
+package-lock.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+.mcp.json
+# Bases de datos y estado de runtime de ruflo
+*.db
+ruvector.db
+.swarm/
+# Runtime/caché generado dentro de .claude por ruflo
+.claude/memory.db
+.claude/*.db
+.claude/statusline.*
+.claude/helpers/*.cjs
+.claude/helpers/*.mjs
+.claude/agents/core/coder.md
+.claude/agents/core/researcher.md
+.claude/agents/core/reviewer.md
+.claude/agents/core/tester.md
+.claude/agents/testing/unit/
+.claude/agents/testing/validation/
