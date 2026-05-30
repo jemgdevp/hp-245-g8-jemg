@@ -66,3 +66,5 @@ ruvector.db
 .claude/agents/core/tester.md
 .claude/agents/testing/unit/
 .claude/agents/testing/validation/
+macos/docs/DSDT.aml
+macos/docs/DSDT.dsl
