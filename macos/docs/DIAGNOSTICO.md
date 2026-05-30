@@ -83,3 +83,15 @@ OpenCore 1.0.7 + NootedRed. Cada entrada = una causa raíz hallada y corregida.
 - ResizeAppleGpuBars=-1, ResizeGpuBars=-1, DeviceProperties iGPU vacío: ya correctos.
 - Kernel>Patch ahora IDÉNTICO a la referencia. Pendiente probar arranque.
 - Si AÚN cuelga en PCI: `nvme=-1` (descartar Kingston NV3 DRAM-less) + USB en puerto 2.0.
+
+## Sesión 2026-05-30 (cont. 3) — atacar USB (elección del usuario)
+- Tras alinear Kernel>Patch con la ref, sigue colgando en `pci flags 0xc000` (foto img3,
+  cargan menos ACPI por los parches alineados pero el freeze es el mismo).
+- Usuario eligió: atacar el USB.
+- **SSDT-USB-Reset (commit `91938fb`):** desactiva RHUB de XHC0/XHC1 bajo Darwin para
+  re-enumerar USB. Validado vs DSDT real: \_SB.PCI0.GP17.XHC0/XHC1, RHUB sin _STA propio
+  (sin parche XSTA). 12 puertos totales (<15, sin XhciPortLimit). Plantilla = OpCore-Simplify.
+- **Prueba física pendiente del usuario:** arrancar el pendrive instalador en un puerto
+  USB 2.0 (no 3.0/azul) — reduce la complejidad de enumeración USB en esta fase.
+- Si AÚN cuelga: queda el NVMe Kingston NV3 DRAM-less (probar SSDT que lo deshabilite o
+  `nvme=-1`), o clonar la EFI de azurejelly tal cual.
