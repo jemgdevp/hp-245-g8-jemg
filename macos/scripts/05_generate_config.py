@@ -199,6 +199,26 @@ def build_config():
 
     template["ACPI"]["Quirks"]["ResetLogoStatus"] = True
 
+    # SSDTs reales del HP 245 G8 (copiados del EFI de referencia del mismo modelo,
+    # en docs/hp-245-g8-efi-base). Arrancar SIN SSDTs colgaba la enumeración PCI
+    # (Couldn't alloc AppleKeyStoreTest / "pci ... flags 0xc000"). El crítico es
+    # SSDT-EC (EC válido temprano en SBRG) y el par SSDT-GPRW + parche GPRW->XPRW
+    # (neutraliza el instant-wake que cuelga el bus PCI en este chasis HP).
+    ACPI_SSDTS = [
+        "SSDT-ALS0", "SSDT-EC", "SSDT-GPRW", "SSDT-HPET", "SSDT-PLUG-ALT",
+        "SSDT-PMC", "SSDT-PNLF", "SSDT-USBX", "SSDT-XOSI",
+    ]
+    template["ACPI"]["Add"] = [
+        {"Comment": s, "Enabled": True, "Path": f"{s}.aml"} for s in ACPI_SSDTS
+    ]
+    template["ACPI"]["Patch"] = [{
+        "Comment": "change GPRW to XPRW",
+        "Count": 0, "Enabled": True, "Limit": 0,
+        "Find": bytes.fromhex("47505257"), "Replace": bytes.fromhex("58505257"),
+        "Mask": b"", "OemTableId": b"", "Skip": 0,
+        "TableLength": 0, "TableSignature": b"",
+    }]
+
     # Esquema de memoria "legacy": el que arranca en el firmware del HP 245 G8
     # (confirmado por el EFI de referencia del mismo modelo). El esquema moderno
     # (RebuildAppleMemoryMap/SetupVirtualMap/SyncRuntimePermissions=True) cuelga
@@ -338,12 +358,14 @@ def build_config():
     })
 
     template["UEFI"]["Quirks"].update({
-        "IgnoreInvalidFlexRatio": True,
-        "ForgeUefiSupport": False,     # firmware moderno: no forzar UEFI 2.x
+        "IgnoreInvalidFlexRatio": False,  # quirk Intel; no aplica a AMD
+        "ForgeUefiSupport": False,        # firmware moderno: no forzar UEFI 2.x
         "ReleaseUsbOwnership": False,
         "RequestBootVarRouting": True,
         "ResizeGpuBars": -1,
-        "DisableSecurityPolicy": True,
+        "DisableSecurityPolicy": False,   # innecesario; el EFI de referencia=False
+        "EnableVectorAcceleration": True, # acelera cripto UEFI (ref lo usa)
+        "UnblockFsConnect": True,         # HP: desbloquea conexión de FS
     })
 
     template["UEFI"]["Drivers"] = [
