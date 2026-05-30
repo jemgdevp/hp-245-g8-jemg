@@ -55,3 +55,16 @@ OpenCore 1.0.7 + NootedRed. Cada entrada = una causa raíz hallada y corregida.
 ## Decisiones de juicio (fuentes en conflicto)
 - **Booter>Quirks:** OpCore-Simplify (heurística) sugiere esquema moderno; el **EFI de referencia (empírico, mismo modelo)** usa legacy. Gana la evidencia: legacy (ya se pasa ExitBootServices con él).
 - **DummyPowerManagement=True:** la referencia usa False porque añade AMDRyzenCPUPowerManagement.kext; nosotros no lo tenemos, así que True (estándar AMD).
+
+## Sesión 2026-05-30 (cont.) — los SSDTs no bastaron; bisección
+- Con los 9 SSDTs el ACPI carga (foto confirma OCLT CpuPlug, SsdtUsbx, GPRW, XOSI
+  en la lista ACPI) pero el kernel **sigue congelado en el mismo punto exacto**:
+  `pci (build 22:12:01 Jun 8 2023), flags 0xc000` + `Couldn't alloc class
+  "AppleKeyStoreTest"` (este último benigno). → **ACPI descartado** como causa del freeze.
+- El freeze real está tras la enumeración PCI = transición gráfica/almacenamiento.
+- **Bisección paso 1 (commit `8d99e9f`):** `-NRedNoAccel` (NootedRed framebuffer-only,
+  sin aceleración Metal). Ataca la causa #1 en Renoir con VRAM 512 MB. Reversible.
+- Próximos pasos si no avanza: NootedRed OFF (aísla gráficos) → si sigue colgado es
+  USB mapping (UTBDefault genérico) / NVMe Kingston NV3 / probar `npci=0x2000`.
+- Errores ACPI en la foto (`AE_ALREADY_EXISTS` _Q50/_CRS, "3 table load failures,
+  28 successful"): benignos; SSDT-HPET no carga sin su parche `_CRS→XCRS` (no crítico).
