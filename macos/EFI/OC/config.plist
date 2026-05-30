@@ -1569,7 +1569,7 @@
 			<key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
 			<dict>
 				<key>boot-args</key>
-				<string>-v keepsyms=1 debug=0x100 npci=0x3000 revblock=media revpatch=cpuname,memtab,sbvmm alcid=1</string>
+				<string>-v keepsyms=1 debug=0x100 npci=0x3000 revblock=media revpatch=cpuname,memtab,sbvmm alcid=1 -NRedDPDelay</string>
 				<key>csr-active-config</key>
 				<data>
 				AwgAAA==
@@ -1606,7 +1606,7 @@
 			<key>ARTFrequency</key>
 			<integer>0</integer>
 			<key>BoardProduct</key>
-			<string>Mac-E7203C0F68AA0004</string>
+			<string>Mac-5F9802EFE386AA28</string>
 			<key>BoardRevision</key>
 			<data>
 			</data>
@@ -1630,18 +1630,18 @@
 			<key>StartupPowerEvents</key>
 			<integer>0</integer>
 			<key>SystemProductName</key>
-			<string>MacBookPro16,3</string>
+			<string>MacBookPro16,2</string>
 			<key>SystemSerialNumber</key>
-			<string>C02C40UNP3XY</string>
+			<string>C02DH0E0MD6R</string>
 			<key>SystemUUID</key>
-			<string>E68EADFF-CAF1-421D-ACD9-449FAB65B72E</string>
+			<string>BFA74E94-07C3-4DA1-950D-5D7B9F6FBABA</string>
 		</dict>
 		<key>Generic</key>
 		<dict>
 			<key>AdviseFeatures</key>
 			<true/>
 			<key>MLB</key>
-			<string>C02003500GU0000JC</string>
+			<string>C02832302PFMD6RAB</string>
 			<key>MaxBIOSVersion</key>
 			<true/>
 			<key>ProcessorType</key>
@@ -1655,16 +1655,16 @@
 			<key>SystemMemoryStatus</key>
 			<string>Auto</string>
 			<key>SystemProductName</key>
-			<string>MacBookPro16,3</string>
+			<string>MacBookPro16,2</string>
 			<key>SystemSerialNumber</key>
-			<string>C02C40UNP3XY</string>
+			<string>C02DH0E0MD6R</string>
 			<key>SystemUUID</key>
-			<string>E68EADFF-CAF1-421D-ACD9-449FAB65B72E</string>
+			<string>BFA74E94-07C3-4DA1-950D-5D7B9F6FBABA</string>
 		</dict>
 		<key>PlatformNVRAM</key>
 		<dict>
 			<key>BID</key>
-			<string>Mac-E7203C0F68AA0004</string>
+			<string>Mac-5F9802EFE386AA28</string>
 			<key>FirmwareFeatures</key>
 			<data>
 			</data>
@@ -1672,15 +1672,15 @@
 			<data>
 			</data>
 			<key>MLB</key>
-			<string>C02003500GU0000JC</string>
+			<string>C02832302PFMD6RAB</string>
 			<key>ROM</key>
 			<data>
 			UgI/NDQC
 			</data>
 			<key>SystemSerialNumber</key>
-			<string>C02C40UNP3XY</string>
+			<string>C02DH0E0MD6R</string>
 			<key>SystemUUID</key>
-			<string>E68EADFF-CAF1-421D-ACD9-449FAB65B72E</string>
+			<string>BFA74E94-07C3-4DA1-950D-5D7B9F6FBABA</string>
 		</dict>
 		<key>SMBIOS</key>
 		<dict>
@@ -1697,7 +1697,7 @@
 			<key>BoardManufacturer</key>
 			<string>Apple Inc.</string>
 			<key>BoardProduct</key>
-			<string>Mac-E7203C0F68AA0004</string>
+			<string>Mac-5F9802EFE386AA28</string>
 			<key>BoardSerialNumber</key>
 			<string></string>
 			<key>BoardType</key>
@@ -1732,13 +1732,13 @@
 			<key>SystemManufacturer</key>
 			<string>Apple Inc.</string>
 			<key>SystemProductName</key>
-			<string>MacBookPro16,3</string>
+			<string>MacBookPro16,2</string>
 			<key>SystemSKUNumber</key>
 			<string></string>
 			<key>SystemSerialNumber</key>
-			<string>C02C40UNP3XY</string>
+			<string>C02DH0E0MD6R</string>
 			<key>SystemUUID</key>
-			<string>E68EADFF-CAF1-421D-ACD9-449FAB65B72E</string>
+			<string>BFA74E94-07C3-4DA1-950D-5D7B9F6FBABA</string>
 			<key>SystemVersion</key>
 			<string>1.0</string>
 		</dict>

@@ -20,9 +20,14 @@ TEMPLATE_PATH = EFI_OC / "config.plist"
 AMD_VANILLA_DIR = TOOLS / "AMD_Vanilla"
 AMD_VANILLA_REPO = "https://github.com/AMD-OSX/AMD_Vanilla.git"
 
-SERIAL = "C02C40UNP3XY"
-MLB = "C02003500GU0000JC"
-SMBIOS_MODEL = "MacBookPro16,3"
+# SMBIOS MacBookPro16,2: recomendado por ChefKiss para NootedRed en Renoir/
+# Lucienne. MacBookPro16,3 NO está en su lista y tiene crash documentado del
+# framebuffer (negro + reinicio tras ExitBootServices). Serial validado con
+# tools/.../macserial --model MacBookPro16,2.
+SERIAL = "C02DH0E0MD6R"
+MLB = "C02832302PFMD6RAB"
+SMBIOS_MODEL = "MacBookPro16,2"
+BOARD_ID = "Mac-5F9802EFE386AA28"  # board-id oficial de MacBookPro16,2
 
 # Núcleos físicos del Ryzen 3 5300U (4C/8T). Se inyecta en los patches
 # AMD_Vanilla "cpuid_cores_per_package to constant"; dejarlo en 0 cuelga
@@ -62,7 +67,10 @@ KEXTS = [
 #   revblock=media             → RestrictEvents: bloquea mediaanalysisd (AMD)
 #   revpatch=cpuname,memtab,sbvmm → nombre CPU + tabla memoria + permite instalar
 #   alcid=1                    → layout de audio (inocuo durante instalación)
-BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 revblock=media revpatch=cpuname,memtab,sbvmm alcid=1"
+#   -NRedDPDelay               → NootedRed: retrasa el link-training del panel
+#                                interno (eDP). Arregla pantalla negra/reinicio
+#                                del framebuffer interno en laptops Renoir.
+BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 revblock=media revpatch=cpuname,memtab,sbvmm alcid=1 -NRedDPDelay"
 CPUID1_DATA = bytes.fromhex("EA060900000000000000000000000000")
 CPUID1_MASK = bytes.fromhex("FFFFFFFF000000000000000000000000")
 import base64
@@ -295,7 +303,7 @@ def build_config():
         "BIOSReleaseDate": "11/06/2024",
         "BIOSVendor": "Apple Inc.",
         "BoardManufacturer": "Apple Inc.",
-        "BoardProduct": "Mac-E7203C0F68AA0004",
+        "BoardProduct": BOARD_ID,
         "SystemManufacturer": "Apple Inc.",
         "SystemProductName": SMBIOS_MODEL,
         "SystemSerialNumber": SERIAL,
@@ -307,7 +315,7 @@ def build_config():
     })
 
     template["PlatformInfo"]["PlatformNVRAM"].update({
-        "BID": "Mac-E7203C0F68AA0004",
+        "BID": BOARD_ID,
         "MLB": MLB,
         "ROM": rom,
         "SystemSerialNumber": SERIAL,
@@ -315,7 +323,7 @@ def build_config():
     })
 
     template["PlatformInfo"]["DataHub"].update({
-        "BoardProduct": "Mac-E7203C0F68AA0004",
+        "BoardProduct": BOARD_ID,
         "SystemProductName": SMBIOS_MODEL,
         "SystemSerialNumber": SERIAL,
         "SystemUUID": system_uuid,
