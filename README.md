@@ -9,7 +9,7 @@
 | Modelo         | HP 245 G8 Notebook PC                        |
 | CPU            | AMD Ryzen 3 5300U (4C/8T, Zen 2, Lucienne)   |
 | iGPU           | AMD Lucienne [1002:164c] (Vega 6)            |
-| RAM            | 14 GB DDR4                                   |
+| RAM            | 16 GB DDR4                                   |
 | Almacenamiento | Kingston NV3 NVMe (DRAM-less)                |
 | WiFi           | Realtek RTL8822CE (sin soporte nativo)       |
 | Audio          | Realtek ALC236                               |
@@ -155,5 +155,3 @@ SYNC_FAST=1 ./scripts/06_sync_usb_efi.sh
 **Última actualización**: Sync script actualizado para incluir audios por defecto (SYNC_FAST para velocidad). Documentación completa de workflow actual.
 
 ---
-
-¿Quieres que prepare el próximo paso de pruebas (por ejemplo, estrategia sin HDMI + flags de NootedRed)? Dime cómo seguimos.
