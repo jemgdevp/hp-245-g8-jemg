@@ -62,6 +62,11 @@ KEXTS = [
     ("AppleALCU",      "x86_64", "23.0.0", "", False),
     ("USBToolBox",     "x86_64", "",    "",     False),
     ("UTBDefault",     "Any",    "",    "",     True),
+    # Touchpad ELAN0708 está en bus I2C (AMDI0010/I2CD, confirmado en DSDT + Report.json).
+    # VoodooI2C gestiona el controlador AMD; VoodooI2CHID enlaza el dispositivo HID I2C.
+    # Ambos presentes en las refs hp-245-g8-efi-base y otus9051; ausentes = touchpad mudo.
+    ("VoodooI2C",      "x86_64", "",    "",     False),
+    ("VoodooI2CHID",   "x86_64", "",    "",     False),
     ("VoodooPS2Controller", "x86_64", "", "",   False),
     ("NVMeFix",        "x86_64", "",    "",     False),
     ("BrightnessKeys", "x86_64", "",    "",     False),
@@ -226,31 +231,25 @@ def build_config():
 
     if USE_MINIMAL_ACPI_FOR_FB_TEST:
         ACPI_SSDTS = [
-            "SSDT-ALS0", "SSDT-EC", "SSDT-PLUG", "SSDT-PNLF",
+            "SSDT-ALS0", "SSDT-EC", "SSDT-PLUG-ALT", "SSDT-PNLF",
             "SSDT-USBX", "SSDT-XOSI",
-            # Añade "SSDT-RTCAWAC", "SSDT-RMNE" si tu DSDT los necesita
         ]
         print("  [FB TEST] Usando set ACPI MINIMAL estilo Otus (menos colisiones)")
     else:
         # Set completo (tu versión actual, validada contra DSDT)
         ACPI_SSDTS = [
-            "SSDT-ALS0", "SSDT-EC", "SSDT-GPRW", "SSDT-HPET", "SSDT-PLUG",
+            "SSDT-ALS0", "SSDT-EC", "SSDT-GPRW", "SSDT-HPET", "SSDT-PLUG-ALT",
             "SSDT-PMC", "SSDT-PNLF", "SSDT-USBX", "SSDT-XOSI", "SSDT-USB-Reset",
         ]
 
-    # SSDTs reales del HP 245 G8 (copiados del EFI de referencia del mismo modelo,
-    # en docs/hp-245-g8-efi-base). Arrancar SIN SSDTs colgaba la enumeración PCI
-    # (Couldn't alloc AppleKeyStoreTest / "pci ... flags 0xc000"). El crítico es
-    # SSDT-EC (EC válido temprano en SBRG) y el par SSDT-GPRW + parche GPRW->XPRW
-    # (neutraliza el instant-wake que cuelga el bus PCI en este chasis HP).
-    # SSDT-PLUG (no PLUG-ALT): la DSDT real declara las CPU como Device
-    # \_SB.P000 (_HID ACPI0007), no PR00; el PLUG-ALT del EFI de referencia (5500U)
-    # apuntaba a PR00 inexistente. SSDT-PLUG.aml se regeneró para P000 (ver
-    # acpi_src/SSDT-PLUG.dsl) y se validó contra docs/DSDT.aml.
-    # SSDT-USB-Reset: desactiva los RHUB de XHC0/XHC1 bajo Darwin para que macOS
-    # re-enumere el USB desde cero. Fix del cuelgue en la enumeración USB/PCI
-    # (freeze tras AppleKeyStoreTest). Paths validados contra docs/DSDT.aml:
-    # \_SB.PCI0.GP17.XHC0.RHUB y XHC1.RHUB (sin _STA propio -> sin parche XSTA).
+    # SSDTs del HP 245 G8. SSDT-PLUG-ALT (no SSDT-PLUG): la versión Intel de PLUG
+    # busca objetos P001, P002... que no existen en AMD (solo P000); causa
+    # AE_NOT_FOUND en verbose. SSDT-PLUG-ALT define objetos virtuales CP00-CP0F
+    # compatibles con AMD. Copiado de docs/hp-245-g8-efi-base y otus9051 (mismo CPU).
+    # SSDT-EC: EC válido temprano en SBRG (crítico).
+    # SSDT-GPRW + parche GPRW->XPRW: neutraliza instant-wake que cuelga bus PCI.
+    # SSDT-USB-Reset: desactiva RHUB de XHC0/XHC1 para que macOS re-enumere USB.
+    # Paths validados contra docs/DSDT.aml: \_SB.PCI0.GP17.XHC0.RHUB y XHC1.RHUB.
     template["ACPI"]["Add"] = [
         {"Comment": s, "Enabled": True, "Path": f"{s}.aml"} for s in ACPI_SSDTS
     ]
@@ -311,10 +310,18 @@ def build_config():
     template["Kernel"]["Emulate"].update({
         "Cpuid1Data": CPUID1_DATA,
         "Cpuid1Mask": CPUID1_MASK,
-        # False: usamos AMDRyzenCPUPowerManagement+SMCAMDProcessor (receta Otus9051,
-        # el EFI del 5300U que arranca), no el dummy.
-        "DummyPowerManagement": False,
+        # True: AMDRyzenCPUPowerManagement v0.7.2 + SMCAMDProcessor provocan kernel panic
+        # (Caps Lock on) en esta config durante la instalación. Re-evaluar tras instalar.
+        "DummyPowerManagement": True,
     })
+
+    # Deshabilitar AMD PM kexts mientras causen kernel panic (Caps Lock on).
+    # Causa diagnosticada: interacción con ForgedInvariant v1.2.0 (ya en v1.5.0) +
+    # quirks de memoria. Re-evaluar tras instalar con sistema estable.
+    AMD_PM_DISABLED = {"AMDRyzenCPUPowerManagement", "SMCAMDProcessor"}
+    for entry in template["Kernel"]["Add"]:
+        if entry["Comment"] in AMD_PM_DISABLED:
+            entry["Enabled"] = False
 
     template["Misc"]["Boot"].update({
         # False: las entradas de recovery/instalador son auxiliares; en True
