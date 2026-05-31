@@ -24,10 +24,10 @@ AMD_VANILLA_REPO = "https://github.com/AMD-OSX/AMD_Vanilla.git"
 # Lucienne. MacBookPro16,3 NO está en su lista y tiene crash documentado del
 # framebuffer (negro + reinicio tras ExitBootServices). Serial validado con
 # tools/.../macserial --model MacBookPro16,2.
-SERIAL = "C02DH0E0MD6R"
-MLB = "C02832302PFMD6RAB"
-SMBIOS_MODEL = "MacBookPro16,2"
-BOARD_ID = "Mac-5F9802EFE386AA28"  # board-id oficial de MacBookPro16,2
+SERIAL = "C02DH0E0PN6P"
+MLB = "C02038201LDPN6P1H"
+SMBIOS_MODEL = "iMac20,1"
+BOARD_ID = "Mac-CFF7D910A743CAAF"  # board-id oficial de iMac20,1 (receta Otus, 5300U)
 
 # Núcleos físicos del Ryzen 3 5300U (4C/8T). Se inyecta en los patches
 # AMD_Vanilla "cpuid_cores_per_package to constant"; dejarlo en 0 cuelga
@@ -73,7 +73,7 @@ KEXTS = [
 #   -NRedDPDelay               → NootedRed: retrasa el link-training del panel
 #                                interno (eDP). Arregla pantalla negra/reinicio
 #                                del framebuffer interno en laptops Renoir.
-BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 revblock=media revpatch=cpuname,memtab,sbvmm alcid=1 -NRedDPDelay -NRedNoAccel"
+BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13"
 # Cpuid1Data VACÍO: en AMD los parches AMD_Vanilla ya fijan la familia de CPU.
 # Inyectar un Cpuid1Data spoofeado de Intel ENCIMA de esos parches provoca un
 # kernel panic tempranísimo (negro + reinicio sin verbose). El EFI de referencia

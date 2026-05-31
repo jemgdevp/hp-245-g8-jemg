@@ -269,6 +269,42 @@
 				<key>Arch</key>
 				<string>x86_64</string>
 				<key>BundlePath</key>
+				<string>AMDRyzenCPUPowerManagement.kext</string>
+				<key>Comment</key>
+				<string>AMDRyzenCPUPowerManagement</string>
+				<key>Enabled</key>
+				<true/>
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/AMDRyzenCPUPowerManagement</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>x86_64</string>
+				<key>BundlePath</key>
+				<string>SMCAMDProcessor.kext</string>
+				<key>Comment</key>
+				<string>SMCAMDProcessor</string>
+				<key>Enabled</key>
+				<true/>
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/SMCAMDProcessor</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>x86_64</string>
+				<key>BundlePath</key>
 				<string>ForgedInvariant.kext</string>
 				<key>Comment</key>
 				<string>ForgedInvariant (TSC sync AMD, reemplaza AmdTscSync)</string>
@@ -511,7 +547,7 @@
 			<data>
 			</data>
 			<key>DummyPowerManagement</key>
-			<true/>
+			<false/>
 			<key>MaxKernel</key>
 			<string></string>
 			<key>MinKernel</key>
@@ -1461,7 +1497,7 @@
 			<key>CustomSMBIOSGuid</key>
 			<false/>
 			<key>DisableIoMapper</key>
-			<false/>
+			<true/>
 			<key>DisableIoMapperMapping</key>
 			<false/>
 			<key>DisableLinkeditJettison</key>
@@ -1642,7 +1678,7 @@
 			<key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
 			<dict>
 				<key>boot-args</key>
-				<string>-v keepsyms=1 debug=0x100 npci=0x3000 revblock=media revpatch=cpuname,memtab,sbvmm alcid=1 -NRedDPDelay</string>
+				<string>-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13</string>
 				<key>csr-active-config</key>
 				<data>
 				AwgAAA==
@@ -1679,7 +1715,7 @@
 			<key>ARTFrequency</key>
 			<integer>0</integer>
 			<key>BoardProduct</key>
-			<string>Mac-5F9802EFE386AA28</string>
+			<string>Mac-CFF7D910A743CAAF</string>
 			<key>BoardRevision</key>
 			<data>
 			</data>
@@ -1703,18 +1739,18 @@
 			<key>StartupPowerEvents</key>
 			<integer>0</integer>
 			<key>SystemProductName</key>
-			<string>MacBookPro16,2</string>
+			<string>iMac20,1</string>
 			<key>SystemSerialNumber</key>
-			<string>C02DH0E0MD6R</string>
+			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>BFA74E94-07C3-4DA1-950D-5D7B9F6FBABA</string>
+			<string>EFCC9C1A-9920-4A8B-ABFC-1B5E2436AD72</string>
 		</dict>
 		<key>Generic</key>
 		<dict>
 			<key>AdviseFeatures</key>
 			<true/>
 			<key>MLB</key>
-			<string>C02832302PFMD6RAB</string>
+			<string>C02038201LDPN6P1H</string>
 			<key>MaxBIOSVersion</key>
 			<true/>
 			<key>ProcessorType</key>
@@ -1728,16 +1764,16 @@
 			<key>SystemMemoryStatus</key>
 			<string>Auto</string>
 			<key>SystemProductName</key>
-			<string>MacBookPro16,2</string>
+			<string>iMac20,1</string>
 			<key>SystemSerialNumber</key>
-			<string>C02DH0E0MD6R</string>
+			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>BFA74E94-07C3-4DA1-950D-5D7B9F6FBABA</string>
+			<string>EFCC9C1A-9920-4A8B-ABFC-1B5E2436AD72</string>
 		</dict>
 		<key>PlatformNVRAM</key>
 		<dict>
 			<key>BID</key>
-			<string>Mac-5F9802EFE386AA28</string>
+			<string>Mac-CFF7D910A743CAAF</string>
 			<key>FirmwareFeatures</key>
 			<data>
 			</data>
@@ -1745,15 +1781,15 @@
 			<data>
 			</data>
 			<key>MLB</key>
-			<string>C02832302PFMD6RAB</string>
+			<string>C02038201LDPN6P1H</string>
 			<key>ROM</key>
 			<data>
 			UgI/NDQC
 			</data>
 			<key>SystemSerialNumber</key>
-			<string>C02DH0E0MD6R</string>
+			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>BFA74E94-07C3-4DA1-950D-5D7B9F6FBABA</string>
+			<string>EFCC9C1A-9920-4A8B-ABFC-1B5E2436AD72</string>
 		</dict>
 		<key>SMBIOS</key>
 		<dict>
@@ -1770,7 +1806,7 @@
 			<key>BoardManufacturer</key>
 			<string>Apple Inc.</string>
 			<key>BoardProduct</key>
-			<string>Mac-5F9802EFE386AA28</string>
+			<string>Mac-CFF7D910A743CAAF</string>
 			<key>BoardSerialNumber</key>
 			<string></string>
 			<key>BoardType</key>
@@ -1805,13 +1841,13 @@
 			<key>SystemManufacturer</key>
 			<string>Apple Inc.</string>
 			<key>SystemProductName</key>
-			<string>MacBookPro16,2</string>
+			<string>iMac20,1</string>
 			<key>SystemSKUNumber</key>
 			<string></string>
 			<key>SystemSerialNumber</key>
-			<string>C02DH0E0MD6R</string>
+			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>BFA74E94-07C3-4DA1-950D-5D7B9F6FBABA</string>
+			<string>EFCC9C1A-9920-4A8B-ABFC-1B5E2436AD72</string>
 			<key>SystemVersion</key>
 			<string>1.0</string>
 		</dict>
@@ -2044,7 +2080,7 @@
 			<key>IgnoreInvalidFlexRatio</key>
 			<false/>
 			<key>ReleaseUsbOwnership</key>
-			<false/>
+			<true/>
 			<key>ReloadOptionRoms</key>
 			<false/>
 			<key>RequestBootVarRouting</key>
