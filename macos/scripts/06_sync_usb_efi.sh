@@ -12,6 +12,14 @@
 #   MOUNT_POINT=/run/media/$USER/MACOS
 set -euo pipefail
 
+# Strongly discourage running as root — the script is designed to work without sudo
+if [[ $EUID -eq 0 ]]; then
+    echo "[sync-usb] ERROR: Do not run this script with sudo/root."
+    echo "[sync-usb] It is designed to mount and sync using udisksctl (no root needed in most cases)."
+    echo "[sync-usb] Please run it as your normal user: ./scripts/06_sync_usb_efi.sh"
+    exit 1
+fi
+
 USB_LABEL="${USB_LABEL:-MACOS}"
 MOUNT_POINT="${MOUNT_POINT:-/run/media/${USER:-jemg}/MACOS}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -81,9 +89,11 @@ mount_usb() {
 
 mount_usb
 
+# Si después de formatear no existe la estructura, la creamos para que el rsync pueda copiar todo.
 if [[ ! -d "${TARGET_EFI_DIR}/OC" ]]; then
-    err "No existe ${TARGET_EFI_DIR}/OC. El USB debe estar formateado como FAT32 y tener la carpeta EFI/OC."
-    exit 1
+    log "No se encontró estructura EFI/OC en el USB (recién formateado). Creando carpetas básicas..."
+    mkdir -p "${TARGET_EFI_DIR}/BOOT"
+    mkdir -p "${TARGET_EFI_DIR}/OC"/{ACPI,Drivers,Kexts,Resources,Tools}
 fi
 
 # =====================================================
@@ -98,15 +108,29 @@ do_rsync() {
     local dst="$2"
     local extra="${3:-}"
 
-    # Good progress flags for large transfers (especially on slow USB)
+    # Good progress flags
     local progress_flags="-h --info=progress2 --no-inc-recursive"
+
+    # Detect if target is on a FAT/exFAT filesystem (common for USB installers)
+    # FAT filesystems don't support Unix permissions/times well, so we use
+    # safer flags to avoid "Read-only file system" and permission errors.
+    local fs_type
+    fs_type=$(df -T "$dst" 2>/dev/null | tail -1 | awk '{print $2}' || echo "unknown")
+
+    local rsync_base_flags="-rt --delete --modify-window=2"
+
+    if [[ "$fs_type" == "vfat" || "$fs_type" == "exfat" || "$fs_type" == "msdos" ]]; then
+        # FAT-friendly flags: no permissions, no owner/group, preserve times loosely
+        rsync_base_flags="-rt --delete --no-perms --no-owner --no-group --modify-window=2"
+        log "Detectado filesystem FAT/exFAT en destino → usando flags compatibles (sin permisos)"
+    fi
 
     if can_write_without_sudo && [[ "$FORCE_SUDO" != "1" ]]; then
         log "Sincronizando sin sudo (el punto de montaje es escribible por el usuario)..."
-        rsync -a --delete $progress_flags $extra "$src" "$dst"
+        rsync $rsync_base_flags $progress_flags $extra "$src" "$dst"
     else
         log "Sincronizando con sudo..."
-        sudo rsync -a --delete $progress_flags $extra "$src" "$dst"
+        sudo rsync $rsync_base_flags $progress_flags $extra "$src" "$dst"
     fi
 }
 
