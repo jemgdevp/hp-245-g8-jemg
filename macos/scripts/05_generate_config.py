@@ -312,7 +312,13 @@ def build_config():
         # quedan ocultas (solo visibles con ESPACIO). Necesario para ver macOS.
         "HideAuxiliary": False,
         "HibernateMode": "None",
-        "LauncherOption": "Full",
+        # Disabled: NO re-registrar la entrada de arranque "OpenCore" en NVRAM.
+        # Con LauncherOption=Full, tras el mkfs.vfat quedaba una entrada NVRAM rancia
+        # que provocaba el bucle "OCB: StartImage failed - Already Started" (re-entrada
+        # del firmware en OpenCore). Como ya tenemos el Bootstrap correcto en
+        # \EFI\BOOT\BOOTx64.efi, el firmware arranca por su ruta fallback sin necesitar
+        # ninguna entrada NVRAM -> Disabled corta la re-registración de raíz.
+        "LauncherOption": "Disabled",
         "PickerAttributes": 17,
         "PickerMode": "Builtin",
         "ShowPicker": True,
@@ -339,6 +345,27 @@ def build_config():
         "SecureBootModel": "Disabled",
         "Vault": "Optional",
     })
+
+    # Herramienta CleanNvram.efi visible en el picker (Auxiliary=False -> sin ESPACIO).
+    # Necesaria para limpiar la entrada NVRAM rancia autorreferencial que causa el bucle
+    # "OCB/BS: StartImage failed - Already Started" (OpenCore intentando arrancarse a sí
+    # mismo desde una entrada de arranque vieja de cuando LauncherOption=Full). El binario
+    # vive en EFI/OC/Tools/CleanNvram.efi (release oficial 1.0.7). Resetear NVRAM es seguro:
+    # los boot-args se re-inyectan vía NVRAM>Add en cada arranque.
+    template["Misc"]["Tools"] = [
+        {
+            "Arguments": "",
+            "Auxiliary": False,
+            "Comment": "Reset NVRAM (borra entradas rancias; fix Already Started)",
+            "Enabled": True,
+            "Flavour": "Auto",
+            "FullNvramAccess": True,
+            "Name": "Reset NVRAM (CleanNvram)",
+            "Path": "CleanNvram.efi",
+            "RealPath": False,
+            "TextMode": False,
+        },
+    ]
 
     nv_guid = "7C436110-AB2A-4BBB-A880-FE41995C9F82"
     template["NVRAM"]["Add"][nv_guid] = {

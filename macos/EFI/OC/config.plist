@@ -1560,7 +1560,7 @@
 			<key>InstanceIdentifier</key>
 			<string></string>
 			<key>LauncherOption</key>
-			<string>Full</string>
+			<string>Disabled</string>
 			<key>LauncherPath</key>
 			<string>Default</string>
 			<key>PickerAttributes</key>
@@ -1669,7 +1669,30 @@
 			<false/>
 		</dict>
 		<key>Tools</key>
-		<array/>
+		<array>
+			<dict>
+				<key>Arguments</key>
+				<string></string>
+				<key>Auxiliary</key>
+				<false/>
+				<key>Comment</key>
+				<string>Reset NVRAM (borra entradas rancias; fix Already Started)</string>
+				<key>Enabled</key>
+				<true/>
+				<key>Flavour</key>
+				<string>Auto</string>
+				<key>FullNvramAccess</key>
+				<true/>
+				<key>Name</key>
+				<string>Reset NVRAM (CleanNvram)</string>
+				<key>Path</key>
+				<string>CleanNvram.efi</string>
+				<key>RealPath</key>
+				<false/>
+				<key>TextMode</key>
+				<false/>
+			</dict>
+		</array>
 	</dict>
 	<key>NVRAM</key>
 	<dict>
@@ -1743,7 +1766,7 @@
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>0DC0B3C6-9C98-4BE5-BE68-F9C56DAE3ACA</string>
+			<string>58A0DACF-CF01-43EA-95C3-73464D18B901</string>
 		</dict>
 		<key>Generic</key>
 		<dict>
@@ -1757,7 +1780,7 @@
 			<integer>0</integer>
 			<key>ROM</key>
 			<data>
-			xIB+sGVT
+			MJyx3Rf5
 			</data>
 			<key>SpoofVendor</key>
 			<true/>
@@ -1768,7 +1791,7 @@
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>0DC0B3C6-9C98-4BE5-BE68-F9C56DAE3ACA</string>
+			<string>58A0DACF-CF01-43EA-95C3-73464D18B901</string>
 		</dict>
 		<key>PlatformNVRAM</key>
 		<dict>
@@ -1784,12 +1807,12 @@
 			<string>C02038201LDPN6P1H</string>
 			<key>ROM</key>
 			<data>
-			xIB+sGVT
+			MJyx3Rf5
 			</data>
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>0DC0B3C6-9C98-4BE5-BE68-F9C56DAE3ACA</string>
+			<string>58A0DACF-CF01-43EA-95C3-73464D18B901</string>
 		</dict>
 		<key>SMBIOS</key>
 		<dict>
@@ -1847,7 +1870,7 @@
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>0DC0B3C6-9C98-4BE5-BE68-F9C56DAE3ACA</string>
+			<string>58A0DACF-CF01-43EA-95C3-73464D18B901</string>
 			<key>SystemVersion</key>
 			<string>1.0</string>
 		</dict>

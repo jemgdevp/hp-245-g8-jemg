@@ -209,3 +209,62 @@ OpenCore 1.0.7 + NootedRed. Cada entrada = una causa raíz hallada y corregida.
      de StartImage del boot.efi del instalador. El muro del framebuffer (Vega 6) sigue
      pendiente más adelante.
 
+## Sesión 2026-05-31 (cont. 9) — causa raíz "Already Started" confirmada con los .txt
+- LauncherOption=Disabled NO bastó (el log `opencore-2026-05-31-060153.txt` post-cambio
+  seguía en bucle). **Lección:** leer SIEMPRE los `opencore-*.txt` de la ESP antes de teorizar
+  (lo había diagnosticado a ojo desde la pantalla).
+- Los `.txt` revelan los prefijos reales y la secuencia:
+  `OCM: Failed to start image` / `BS: Failed to start OpenCore image` /
+  `BS: Failed to load OpenCore from disk` / `OC: Boot failed` / `OCB: StartImage failed`,
+  todos `Already started`. Confirmado en fuente: `BS:` = Bootstrap
+  (`Application/Bootstrap/Bootstrap.c:134,189`), `OCB:` = `BootEntryManagement.c:2593`.
+- **Causa raíz:** que OpenCore ESCRIBA el `.txt` prueba que arranca y carga config OK. La
+  entrada que se selecciona en el picker apunta al **propio launcher de OpenCore** (entrada
+  de arranque NVRAM **autorreferencial**, residuo de cuando `LauncherOption=Full`). El
+  Bootstrap se re-ejecuta e intenta arrancar `OpenCore.efi` ya iniciado → `EFI_ALREADY_STARTED`
+  → bucle. `Disabled` evita crear entradas nuevas pero NO borra la rancia.
+- **Fix aplicado:** `LauncherOption=Disabled` + herramienta **CleanNvram.efi** en `Misc.Tools`
+  (Auxiliary=False = siempre visible; `FullNvramAccess=True` — el schema 1.0.7 lo EXIGE;
+  binario del release oficial 1.0.7 en `EFI/OC/Tools/`). `AllowNvramReset` se descartó: no
+  existe en el schema 1.0.7 (ocvalidate lo rechaza). ocvalidate OK, sincronizado al USB.
+- **Próximo paso del usuario:** arrancar → en el picker elegir **"Reset NVRAM (CleanNvram)"**
+  → cold boot. Resetear NVRAM es seguro (los boot-args se re-inyectan vía NVRAM>Add). Tras
+  limpiar, seleccionar macOS debería arrancar el instalador de verdad → ahí reaparece el
+  muro real del framebuffer (Vega 6).
+
+## Sesión 2026-05-31 (cont. 10) — RESUELTO el bucle: faltaba el instalador + el Bootstrap no arranca en este firmware
+- CleanNvram NO arregló el bucle (limpiar NVRAM no cambió nada) → la hipótesis "NVRAM rancia"
+  de cont.9 era incorrecta/incompleta. Releyendo los `.txt` y la fuente, dos causas reales:
+  1. **El USB NO tenía instalador de macOS.** El `mkfs.vfat` borró `com.apple.recovery.boot/`
+     y solo se re-sincronizó el `EFI/`. Sin macOS que arrancar, la ÚNICA entrada del picker
+     era OpenCore mismo → cualquier selección = "Already Started". (`ls` del USB: solo EFI,
+     logs y tools; cero `BaseSystem.dmg`/recovery.)
+  2. **El Bootstrap no puede arrancar OpenCore en este firmware HP.** El log muestra
+     `OCM: Failed to start image - Already started` en el segundo 0, desde
+     `OcLoadAndRunImage` (`Library/OcMiscLib/ImageRunner.c:110`, carga OpenCore.efi desde
+     buffer). Firmware "frágil" (ref OpenCore bugtracker #712/#1502). Históricamente arrancaba
+     por una entrada NVRAM DIRECTA a `\EFI\OC\OpenCore.efi`, que el `mkfs.vfat` invalidó.
+- **Fix aplicado (ambas cosas):**
+  1. Restaurado el instalador: copiado `recovery_ventura/com.apple.recovery.boot/` (Ventura 13,
+     board `Mac-4B682C642B45593E`, BaseSystem.dmg 706568592 B) a la raíz del USB. (El otro
+     cache `recovery/` 884 MB es Sequoia 15.x via `Mac-937A206F2EE63C01`; NO usar.)
+  2. Arranque directo: creada entrada UEFI con
+     `sudo efibootmgr -c -d /dev/sdb -p 1 -L OpenCore-HP245 -l '\EFI\OC\OpenCore.efi'`
+     → `Boot0000* OpenCore-HP245  HD(1,GPT,4bae763e-…)/\EFI\OC\OpenCore.efi`, primera en
+     BootOrder. Arranca OpenCore directo (sin el Bootstrap roto). Funciona en cualquier puerto
+     (referencia por GUID GPT). Si se reformatea el USB, re-ejecutar efibootmgr.
+- **RESULTADO — la cadena de arranque está RESUELTA.** El picker muestra "macOS external dmg"
+  (entra) vs "no dmg" = OpenCore (Already Started, no elegir). Seleccionando el dmg, **el kernel
+  de Ventura ARRANCA**: cargan los 21 SSDTs (3 fallos benignos `_Q50/_CRS/CpuPlug AE_*`),
+  **NootedRed carga** (banner NRed), RestrictEvents 1.1.6, AppleCredentialManager. El log
+  boot.efi llega a `EXITBS:START` (handoff limpio al kernel). El verbose en pantalla se corta
+  en `pci (build 22:12:01 Jun 8 2023), flags 0xc0080` → **el muro del framebuffer Vega 6**
+  (el panel eDP toma el canal del verbose). `Couldn't alloc AppleKeyStoreTest` = benigno.
+- Anotado: `OC: Kernel patcher result 22 (Shaneee | _mtrr_update_action | Fix PAT) - Not Found`
+  — un parche `_mtrr` no matchea en el kernel de Ventura (revisar si el muro del FB persiste).
+- **Próximo paso (decisivo, del usuario, sin hardware extra):**
+  1. **HDMI externo** (conectado antes de encender): ¿muestra el instalador aunque la interna
+     esté negra? SÍ → problema solo del panel eDP → instalar por HDMI.
+  2. **LED de Bloq Mayús** con la pantalla congelada: si responde → kernel vivo (solo display).
+  - Si "vivo pero negro": aislar NootedRed (OFF + `-radvesa` = VESA) o ajustes eDP de NootedRed.
+
