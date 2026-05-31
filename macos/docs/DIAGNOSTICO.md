@@ -122,3 +122,12 @@ OpenCore 1.0.7 + NootedRed. Cada entrada = una causa raíz hallada y corregida.
 5. [USUARIO] Si 1-4 fallan: instalar **Sonoma 14** (no Monterey), versión de la ref.
 - Veredicto del workflow: alcanzable; última milla = framebuffer; único límite duro
   plausible = VRAM 512MB. NO es el NVMe (no comprar disco aún).
+
+## Sesión 2026-05-30 (cont. 5) — VRAM subida a 2 GB (BIOS)
+- El usuario subió el UMA Frame Buffer a **2 GB** desde la BIOS HP F.30 (la opción
+  SÍ existía). Confirmado en Linux: radeontop 2019M VRAM, glxinfo 2048MB, vulkaninfo
+  heap 2.91 GiB. Antes 512 MB (por debajo del umbral ~1GB de NootedRed = sospechoso #1).
+- **NO requiere config nueva en el EFI:** NootedRed lee la VRAM del firmware; no se
+  fija por config.plist. DeviceProperties de la iGPU debe seguir VACÍO (correcto).
+- Pendiente: arrancar y ver si ahora pasa el framebuffer (la hipótesis VRAM se prueba
+  solo arrancando; nada que editar).
