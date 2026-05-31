@@ -88,7 +88,11 @@ KEXTS = [
 #   - Otus9051: mismo CPU exacto, external HDMI funciona, alcid=13.
 # Fácil toggle para bisección de NootedRed framebuffer (ver image5 + DIAGNOSTICO)
 USE_NRED_DP_DELAY = True
+# True → -NRedNoAccel: framebuffer-only sin Metal (aisla si el cuelgue está en
+# la aceleración gráfica vs el panel eDP). Prueba #3 según diagnóstico sess.11.
+USE_NRED_NO_ACCEL = False
 _NRED_EXTRA = " -NRedDPDelay" if USE_NRED_DP_DELAY else ""
+_NRED_EXTRA += " -NRedNoAccel" if USE_NRED_NO_ACCEL else ""
 BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13" + _NRED_EXTRA
 # Cpuid1Data VACÍO: en AMD los parches AMD_Vanilla ya fijan la familia de CPU.
 # Inyectar un Cpuid1Data spoofeado de Intel ENCIMA de esos parches provoca un
@@ -263,20 +267,25 @@ def build_config():
         "TableLength": 0, "TableSignature": b"",
     }]
 
-    # Esquema de memoria "legacy": el que arranca en el firmware del HP 245 G8
-    # (confirmado por el EFI de referencia del mismo modelo). El esquema moderno
-    # (RebuildAppleMemoryMap/SetupVirtualMap/SyncRuntimePermissions=True) cuelga
-    # el kernel justo tras ExitBootServices en esta placa.
+    # Esquema de memoria "moderno" (sesión 11): Otus9051 (Ryzen 3 5300U exacto
+    # que arranca Ventura) usa este esquema. El legacy se fijó en sesión 2 porque
+    # la EFI de referencia HP 245 G8 (5500U) lo usaba y el moderno colgaba tras
+    # ExitBootServices — pero eso fue antes de alinear SMBIOS, power-kexts y
+    # ACPI. Grok + issue #206 confirman que Otus9051 (idéntico CPU) usa moderno.
+    # DevirtualiseMmio=True + ProtectUefiServices=True: corrección del mapa MMIO
+    # del iGPU recomendada por AMD-OSX para Renoir/Lucienne con NootedRed.
+    # Si esto cuelga tras ExitBootServices → revertir a legacy (sesión 2 fix).
     template["Booter"]["Quirks"].update({
         "AvoidRuntimeDefrag": True,
-        "DevirtualiseMmio": False,
+        "DevirtualiseMmio": True,
         "EnableSafeModeSlide": True,
-        "EnableWriteUnprotector": True,
+        "EnableWriteUnprotector": False,
+        "ProtectUefiServices": True,
         "ProvideCustomSlide": True,
-        "SetupVirtualMap": False,
-        "SyncRuntimePermissions": False,
-        "RebuildAppleMemoryMap": False,
+        "RebuildAppleMemoryMap": True,
         "ResizeAppleGpuBars": -1,
+        "SetupVirtualMap": True,
+        "SyncRuntimePermissions": True,
     })
 
     template["Kernel"]["Add"] = [
@@ -504,7 +513,8 @@ def build_config():
     print(f"  Patches:     {len(patches)}")
     print(f"  Kexts:       {len(KEXTS)}")
     print(f"  Boot args:   {BOOT_ARGS}")
-    print(f"  -NRedDPDelay: {USE_NRED_DP_DELAY}")
+    print(f"  -NRedDPDelay:  {USE_NRED_DP_DELAY}")
+    print(f"  -NRedNoAccel:  {USE_NRED_NO_ACCEL}")
     print(f"  ACPI minimal test: {USE_MINIMAL_ACPI_FOR_FB_TEST}")
     print()
     print("  NEXT:")

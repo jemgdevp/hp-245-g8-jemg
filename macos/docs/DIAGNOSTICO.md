@@ -268,3 +268,51 @@ OpenCore 1.0.7 + NootedRed. Cada entrada = una causa raíz hallada y corregida.
   2. **LED de Bloq Mayús** con la pantalla congelada: si responde → kernel vivo (solo display).
   - Si "vivo pero negro": aislar NootedRed (OFF + `-radvesa` = VESA) o ajustes eDP de NootedRed.
 
+## Sesión 2026-05-31 (cont. 11) — Diagnóstico: eDP link-training + Booter Quirks modernos
+
+### Síntoma confirmado
+- LED Bloq Mayús **no responde**. Logs blancos idénticos a imagen anterior: se corta en
+  `pci (build 22:12:01 Jun 8 2023), flags 0xc080`.
+- **Diagnóstico de consenso (usuario + Grok + issue #206 NootedRed):** el sistema
+  **está vivo**. El Bloq Mayús no responde en ese punto porque el controlador PS/2
+  (VoodooPS2) aún no terminó de inicializar su capa HID — NO significa CPU congelado.
+  El verbose se corta porque **NootedRed toma el canal eDP del panel interno** para
+  inicializar el framebuffer; desde ese momento el verbose ya no llega a la pantalla.
+- **Issue #52 (NootedRed):** `link training FAIL` del panel eDP es muy común en laptops
+  HP Ryzen 5000U (Lucienne). **Issue #206 (NootedRed):** en estos equipos el HDMI externo
+  funciona aunque la interna quede negra.
+
+### Por qué HDMI es la prueba decisiva
+- Otus9051 (Ryzen 3 5300U exacto): lista "External Display via HDMI" como funcional en Ventura.
+- azurejelly (HP 245 G8, mismo modelo): pantalla interna negra + HDMI full con aceleración.
+- Si HDMI muestra el instalador → instalar por HDMI; la pantalla interna se afina después.
+
+### Nota sobre el parche `_mtrr` Not Found
+- Log cont.10: "OC: Kernel patcher result 22 (Shaneee | _mtrr_update_action | Fix PAT) - Not Found".
+- El generador activa TODOS los patches de AMD_Vanilla (Enabled=True). Shaneee y Algrey son
+  entradas separadas; si Shaneee no matchea el kernel de Ventura pero Algrey sí → el PAT fix
+  SE APLICA igual vía Algrey. No es el cuelgue; es un warning benigno.
+
+### Cambios aplicados (commit `sesión-11`)
+1. **Booter Quirks → esquema MODERNO** (el que usa Otus9051, el 5300U que arranca Ventura):
+   - `RebuildAppleMemoryMap=True`, `SetupVirtualMap=True`, `SyncRuntimePermissions=True`
+   - `EnableWriteUnprotector=False`, `DevirtualiseMmio=True`, `ProtectUefiServices=True`
+   - Anterior (legacy): funcionaba para pasar ExitBootServices (sesión 2) pero impedía
+     el correcto mapeo MMIO del framebuffer Lucienne según AMD-OSX.
+   - Si cuelga tras ExitBootServices → revertir a legacy.
+2. **Toggle `USE_NRED_NO_ACCEL`** en el generador (default=False): activa `-NRedNoAccel`
+   que fuerza NootedRed a modo framebuffer-only sin Metal. Útil si el cuelgue está
+   en la inicialización de la aceleración, no en el panel.
+
+### Plan de arranque (sesión 11)
+1. **[USUARIO — PRIMERO]** Conectar HDMI **antes** de encender. Si el instalador aparece
+   por HDMI → el sistema vive, el problema es solo el panel eDP. Instalar por HDMI.
+2. **[USUARIO — si no]** Anotar si el verbose avanza más con los quirks modernos o se
+   detiene antes (ExitBootServices = retroceso → revertir a legacy).
+3. **[YO — si el muro persiste]** Activar `USE_NRED_NO_ACCEL=True` + probar HDMI;
+   si arranca sin aceleración → el fallo está en Metal/compute, no en el panel.
+4. **[Fallback]** `AMDRyzenCPUPowerManagement` + `SMCAMDProcessor` — si el Bloq Mayús
+   realmente no responde *después de esperar >2 min* → sí podría ser un panic real de
+   estos kexts (el README de ryzen-hackintosh los marca como optativos y riesgosos).
+   Se desactivan + `DummyPowerManagement=True` y se reprueba.
+
