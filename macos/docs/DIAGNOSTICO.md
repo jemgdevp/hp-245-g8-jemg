@@ -162,3 +162,50 @@ OpenCore 1.0.7 + NootedRed. Cada entrada = una causa raíz hallada y corregida.
 - Pendiente inmediato del usuario: insertar USB → correr `./scripts/06_sync_usb_efi.sh` (o con MOUNT_POINT explícito) → arrancar en puerto USB 2.0.
 - Próxima prueba: con la receta Otus completa (power AMD real + iMac20,1 + DisableIoMapper). Si aún cuelga en framebuffer → siguiente bisección es NootedRed nightly más reciente o ACPI minimal del Otus (PLUG-ALT + rmne + RTCAWAC).
 
+## Sesión 2026-05-31 (cont. 7) — RESUELTO: "OC: failed to load configuration" (BOOTx64.efi mal)
+- **Síntoma:** tras un `mkfs.vfat` fresco del USB, OpenCore arrancaba pero abortaba con
+  `OC: Failed to load configuration!` en bucle. El config era válido (ocvalidate 1.0.7 OK,
+  byte-idéntico USB/local), todos los kexts/SSDTs/drivers presentes, versiones 1.0.7
+  consistentes. No era el config.
+- **Causa raíz (confirmada en la fuente de OpenCore):** `EFI/BOOT/BOOTx64.efi` era una
+  **copia íntegra de `OpenCore.efi`** (626688 B, md5 `c171f38a`) en vez del **Bootstrap**
+  (24576 B, md5 `c2e80064` en 1.0.7). En `Application/OpenCore/OpenCore.c` (`OcBootstrap`),
+  OpenCore deriva su raíz del **directorio del .efi en ejecución** y lee `config.plist`
+  ahí. Arrancando desde `\EFI\BOOT\` buscaba `\EFI\BOOT\config.plist` (inexistente) → muere.
+  La redirección `EFI\BOOT\BOOTx64.efi → EFI\OC\OpenCore.efi` SOLO existe en el Bootstrap
+  (`Application/Bootstrap/Bootstrap.c:91`), no en OpenCore.efi.
+- **Por qué se destapó ahora:** el config tiene `Misc.Boot.LauncherOption=Full`, que
+  auto-registra una entrada NVRAM a `\EFI\OC\OpenCore.efi`; mientras existía, arrancaba
+  por NVRAM (saltándose el BOOTx64 malo). El `mkfs.vfat` invalidó esa entrada (cambió el
+  GUID de partición) y el firmware HP cayó al fallback `\EFI\BOOT\BOOTx64.efi`. El binario
+  malo estaba en git desde el commit inicial del EFI (`a4954c0`): nunca funcionó por
+  fallback, solo por NVRAM.
+- **Fix aplicado:** descargado el release oficial OpenCore 1.0.7; verificado que nuestro
+  `OpenCore.efi` y `OpenRuntime.efi` son byte-idénticos al oficial (genuinos). Reemplazado
+  `EFI/BOOT/BOOTx64.efi` por el Bootstrap real (24576 B) en local y USB. ocvalidate OK.
+- **Veredicto scripts:** `06_sync_usb_efi.sh` NO hace mkfs (lo hace el usuario a mano) y
+  sincroniza EFI/ completo con `rsync --delete`, así que propagará el Bootstrap correcto en
+  cada sync. No fue culpable del binario malo; el detonante fue la práctica de `mkfs.vfat`.
+- **Resultado:** OpenCore ahora carga y muestra el picker. ✅
+
+## Sesión 2026-05-31 (cont. 8) — NUEVO MURO: "OCB: StartImage failed - Already Started"
+- **Síntoma:** el picker carga, se selecciona "macOS"/instalador, imprime "OK" y salta
+  `OCB: StartImage failed - Already Started`, se resetea y vuelve al picker en bucle.
+- **Caracterización (Dortania + foro AMD-OSX):** `StartImage` devuelve `EFI_ALREADY_STARTED`.
+  No es un problema del config.plist en sí; es **confusión de la entrada de arranque / NVRAM**
+  (el firmware re-entra en OpenCore / handle de imagen ya iniciado). Dortania lo asocia a
+  multiboot con Windows (no es nuestro caso, no hay Windows en el USB); el foro AMD-OSX lo
+  resuelve con **reset de NVRAM + cold boot + fijar prioridad de arranque en BIOS**.
+- **Hipótesis para nuestro caso:** encaja con el churn de NVRAM reciente — tras el `mkfs.vfat`
+  y el fix del Bootstrap, hay probablemente una **entrada NVRAM "OpenCore" rancia** apuntando
+  a una ruta/partición vieja, mientras `LauncherOption=Full` intenta re-registrar → re-entrada.
+- **Plan (próxima sesión), por confianza×facilidad:**
+  1. [USUARIO] **Reset NVRAM**: en el picker de OpenCore pulsar **espacio** → seleccionar
+     `Reset NVRAM` (o `CleanNvram.efi`), luego **cold boot** (apagado total, no reset).
+  2. [USUARIO] En BIOS HP F.30: limpiar entradas de arranque viejas y dejar el USB primero.
+  3. [YO, si persiste] evaluar `Misc.Boot.LauncherOption=Disabled` para que OpenCore deje de
+     re-registrarse en NVRAM (evita la entrada rancia que causa la re-entrada).
+  4. Confirmado que NO es el framebuffer aún: ni siquiera llega a cargar el kernel; es la fase
+     de StartImage del boot.efi del instalador. El muro del framebuffer (Vega 6) sigue
+     pendiente más adelante.
+

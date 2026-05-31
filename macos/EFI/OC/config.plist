@@ -1678,7 +1678,7 @@
 			<key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
 			<dict>
 				<key>boot-args</key>
-				<string>-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13</string>
+				<string>-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 -NRedDPDelay</string>
 				<key>csr-active-config</key>
 				<data>
 				AwgAAA==
@@ -1743,7 +1743,7 @@
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>D38D3CFC-804B-4A79-970D-A932A5E7D1E7</string>
+			<string>0DC0B3C6-9C98-4BE5-BE68-F9C56DAE3ACA</string>
 		</dict>
 		<key>Generic</key>
 		<dict>
@@ -1757,7 +1757,7 @@
 			<integer>0</integer>
 			<key>ROM</key>
 			<data>
-			BBI8G9IR
+			xIB+sGVT
 			</data>
 			<key>SpoofVendor</key>
 			<true/>
@@ -1768,7 +1768,7 @@
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>D38D3CFC-804B-4A79-970D-A932A5E7D1E7</string>
+			<string>0DC0B3C6-9C98-4BE5-BE68-F9C56DAE3ACA</string>
 		</dict>
 		<key>PlatformNVRAM</key>
 		<dict>
@@ -1784,12 +1784,12 @@
 			<string>C02038201LDPN6P1H</string>
 			<key>ROM</key>
 			<data>
-			BBI8G9IR
+			xIB+sGVT
 			</data>
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>D38D3CFC-804B-4A79-970D-A932A5E7D1E7</string>
+			<string>0DC0B3C6-9C98-4BE5-BE68-F9C56DAE3ACA</string>
 		</dict>
 		<key>SMBIOS</key>
 		<dict>
@@ -1847,7 +1847,7 @@
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>D38D3CFC-804B-4A79-970D-A932A5E7D1E7</string>
+			<string>0DC0B3C6-9C98-4BE5-BE68-F9C56DAE3ACA</string>
 			<key>SystemVersion</key>
 			<string>1.0</string>
 		</dict>

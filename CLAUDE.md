@@ -1,4 +1,80 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Qué es este repo
+
+Build de un **EFI de OpenCore (Hackintosh)** para un portátil concreto: **HP 245 G8** con **AMD Ryzen 3 5300U** (Lucienne/Renoir, Zen 2 APU, iGPU Vega 6 `1002:164c`). No es un proyecto de software: el "producto" es la carpeta `macos/EFI/` que se sincroniza a un USB instalador de macOS. El objetivo actual (ver `README.md`) es **pasar el instalador de macOS Ventura/Sonoma con aceleración gráfica vía NootedRed** en este hardware específico; aún no instalar.
+
+Casi todo el trabajo vive en `macos/`. La raíz contiene solo scaffolding de Ruflo/Claude Code (`.claude/`, `node_modules/`, `*.db`) e imágenes de diagnóstico de pruebas de arranque (`Pasted image*.png`, `IMG_*`) — estas son artefactos de sesión, no fuente.
+
+## Flujo de trabajo (editar → generar → validar → sincronizar)
+
+Todo se ejecuta desde `macos/`. El ciclo de iteración (bisección rápida del bug de framebuffer) es:
+
+```bash
+cd macos
+# 1. Editar los toggles de prueba en el generador (ver "Toggles" abajo)
+#    Para cambios de fondo (kexts, quirks, boot-args) se edita el cuerpo del script.
+python3 scripts/05_generate_config.py        # regenera EFI/OC/config.plist (+ backup automático)
+./tools/ocvalidate ./EFI/OC/config.plist     # SIEMPRE validar antes de sincronizar
+./scripts/06_sync_usb_efi.sh                  # sincroniza EFI/ al USB (label MACOS)
+```
+
+- `SYNC_FAST=1 ./scripts/06_sync_usb_efi.sh` — excluye `OC/Resources/Audio/` (~360 mp3) para iterar rápido. Por defecto el sync es **completo** (OpenCore puede quejarse de archivos faltantes aunque `AudioSupport=false`).
+- `06_sync_usb_efi.sh` está diseñado para correr **sin sudo** (usa `udisksctl`); rechaza ejecutarse como root. Override: `FORCE_SUDO=1`. El USB debe tener label `MACOS` (override con `USB_LABEL=` / `MOUNT_POINT=`).
+- Usar siempre un puerto **USB 2.0 (negro)** para el pendrive durante las pruebas.
+
+Scripts de bootstrap (de un solo uso, normalmente ya ejecutados — generan `*.log` junto a ellos):
+- `01_install_ocat.sh` — instala OCAT + dependencias (Arch Linux).
+- `02_download_recovery.sh` — descarga el recovery de macOS (Ventura por defecto; ver nota de board-id dentro).
+- `03_download_kexts.sh` — descarga los kexts a `macos/kexts/`.
+- `04_generate_config.sh` — guía interactiva legacy para OCAT. **Obsoleto**: el generador real es `05_generate_config.py`. Ojo: los headers de los scripts `0X_*` mencionan `MacBookPro16,3`, pero el SMBIOS vigente es `iMac20,1` (lo define `05_generate_config.py`, que es la fuente de verdad).
+
+## Arquitectura del generador (`scripts/05_generate_config.py`)
+
+Es la **única fuente de verdad** del `config.plist`. Cómo funciona y por qué importa:
+
+- **Parte de `EFI/OC/config.plist` como plantilla** (lo lee, lo muta sección por sección con `plistlib`, y lo reescribe). No genera desde cero: respeta lo que ya hay y solo sobreescribe las claves que controla. Hace un backup `config_backup_<hash>.plist` en cada ejecución (de ahí los muchos backups en `EFI/OC/`).
+- **Clona/actualiza `AMD_Vanilla`** en `tools/AMD_Vanilla` y carga sus kernel patches. **Inyecta `PHYSICAL_CORES = 4`** en los patches `cpuid_cores_per_package to constant` (el placeholder `0x00` de AMD_Vanilla cuelga el arranque SMP/PCI — este es un fix crítico, no cosmético).
+- **`KEXTS`** es una lista de tuplas `(nombre, arch, minkernel, maxkernel, noexec)`. El 5º campo `noexec=True` marca kexts *codeless* (sin binario, p.ej. `AppleMCEReporterDisabler`, `UTBDefault`). Power management AMD real (`SMCAMDProcessor` + `AMDRyzenCPUPowerManagement`) en vez de `DummyPowerManagement`. TSC sync vía `ForgedInvariant` (no `AmdTscSync`).
+- Cada constante y bloque lleva **comentarios densos que justifican la decisión** contra el hardware/log de arranque. No cambies valores sin leer el comentario adyacente — codifican fallos reales ya diagnosticados. Lista de gotchas confirmados:
+  - `Cpuid1Data`/`Cpuid1Mask` **vacíos** — spoofear CPUID de Intel sobre los patches AMD causa panic tempranísimo (negro sin verbose).
+  - Booter Quirks en esquema **legacy** (`RebuildAppleMemoryMap=False`, `SetupVirtualMap=False`, `SyncRuntimePermissions=False`) — el esquema moderno cuelga tras ExitBootServices en esta placa.
+  - `npci=0x3000` en boot-args — el BIOS HP no expone Above 4G Decoding.
+  - SMBIOS `iMac20,1` (board-id `Mac-CFF7D910A743CAAF`) — recomendado por ChefKiss para NootedRed en Renoir/Lucienne.
+
+### Toggles de prueba (para bisección)
+
+Variables booleanas pensadas para activar/desactivar pruebas sin reescribir el script:
+- `USE_NRED_DP_DELAY` (módulo, ~línea 90) → añade `-NRedDPDelay` a boot-args (retrasa link-training del panel eDP interno).
+- `USE_MINIMAL_ACPI_FOR_FB_TEST` (dentro de `build_config`, ~línea 221) → conmuta entre el set ACPI completo (10 SSDTs) y un set mínimo estilo Otus9051.
+
+## ACPI / SSDTs
+
+- Los `.aml` que carga el config viven en `EFI/OC/ACPI/`. Las fuentes editables (`.dsl`) están en `macos/acpi_src/` (p.ej. `SSDT-PLUG.dsl`, `SSDT-USB-Reset.dsl`) — si editas un `.dsl` hay que recompilarlo a `.aml` (con `iasl`) antes de regenerar.
+- La DSDT real del equipo está volcada en `macos/docs/DSDT.dsl` / `.aml`; los paths de los SSDTs se validan contra ella (CPUs declaradas como `\_SB.P000`, no `PR00`).
+- Hay un parche ACPI `GPRW → XPRW` (Find/Replace de 5 bytes) que neutraliza el instant-wake que cuelga el bus PCI en este chasis.
+
+## Material de referencia (`macos/docs/`)
+
+Carpetas clave para entender decisiones y diagnosticar:
+- **`docs/DIAGNOSTICO.md`** — bitácora completa de bisección (qué se probó, qué colgó y por qué). Léela antes de tocar quirks/boot-args.
+- `docs/hp-245-g8-efi-base/` — EFI de referencia del **mismo modelo** que arranca; fuente de los SSDTs reales.
+- `docs/otus9051-hp15s/` — EFI de referencia del **mismo CPU exacto** (5300U) que arranca con HDMI externo.
+- `docs/Hardware-Sniffer/`, `docs/OpCore-Simplify/` — repos vendados (con su propio `.git`); herramientas, no fuente de este proyecto. `docs/Report.json` es el dump de Hardware-Sniffer.
+
+## Convenciones del repo
+
+- Commits: rama `main`, en español, sin trailer `Co-Authored-By` (ver regla en la sección Ruflo). No hacer `push` salvo que se pida.
+- No commitear secretos. Los seriales/MLB del SMBIOS en `05_generate_config.py` son para este equipo personal (no son secretos de terceros), pero el `SystemUUID` y `ROM` se regeneran aleatoriamente en cada ejecución.
+- `docs/Hardware-Sniffer` y `docs/OpCore-Simplify` tienen su propio `.git` — no los modifiques como si fueran parte de este repo.
+
+---
+
 # Ruflo — Claude Code Configuration
+
+> Lo siguiente es configuración de Ruflo/Claude Code versionada a propósito (agentes y helpers custom). El uso de swarm/MCP es **opcional**: este proyecto es de iteración manual sobre scripts, no de desarrollo multi-archivo de software.
 
 ## Rules
 

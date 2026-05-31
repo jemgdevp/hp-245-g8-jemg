@@ -89,11 +89,29 @@ mount_usb() {
 
 mount_usb
 
-# Si después de formatear no existe la estructura, la creamos para que el rsync pueda copiar todo.
+# Asegurar que TARGET_EFI_DIR existe y es accesible
+if [[ ! -d "${TARGET_EFI_DIR}" ]]; then
+    log "Creando ${TARGET_EFI_DIR} (puede requerir sudo)..."
+    mkdir -p "${TARGET_EFI_DIR}" 2>/dev/null || sudo mkdir -p "${TARGET_EFI_DIR}"
+fi
+
+# Si después de formatear no existe la estructura completa, la creamos con privilegios correctos.
+ensure_dir() {
+    local d="$1"
+    if [[ ! -d "$d" ]]; then
+        mkdir -p "$d" 2>/dev/null || sudo mkdir -p "$d"
+    fi
+}
+
 if [[ ! -d "${TARGET_EFI_DIR}/OC" ]]; then
-    log "No se encontró estructura EFI/OC en el USB (recién formateado). Creando carpetas básicas..."
-    mkdir -p "${TARGET_EFI_DIR}/BOOT"
-    mkdir -p "${TARGET_EFI_DIR}/OC"/{ACPI,Drivers,Kexts,Resources,Tools}
+    log "No se encontró estructura EFI/OC en el USB. Creando carpetas (EFI/OC/{ACPI,Drivers,Kexts,Resources,Tools,BOOT})..."
+    ensure_dir "${TARGET_EFI_DIR}/BOOT"
+    ensure_dir "${TARGET_EFI_DIR}/OC"
+    ensure_dir "${TARGET_EFI_DIR}/OC/ACPI"
+    ensure_dir "${TARGET_EFI_DIR}/OC/Drivers"
+    ensure_dir "${TARGET_EFI_DIR}/OC/Kexts"
+    ensure_dir "${TARGET_EFI_DIR}/OC/Resources"
+    ensure_dir "${TARGET_EFI_DIR}/OC/Tools"
 fi
 
 # =====================================================
@@ -169,25 +187,82 @@ do_rsync "${SOURCE_EFI_DIR}/" "${TARGET_EFI_DIR}/" "$RSYNC_EXCLUDES"
 
 # Tools (opcional)
 if [[ -d "${PROJECT_ROOT}/tools" ]]; then
-    mkdir -p "${MOUNT_POINT}/tools" 2>/dev/null || sudo mkdir -p "${MOUNT_POINT}/tools"
+    ensure_dir "${MOUNT_POINT}/tools"
     do_rsync "${PROJECT_ROOT}/tools/" "${MOUNT_POINT}/tools/" "--exclude=.*" || true
 fi
 
 # =====================================================
-# VALIDACIÓN
+# VALIDACIÓN OBLIGATORIA (HARD FAIL si algo falta)
 # =====================================================
-if [[ -x "${LOCAL_OCVALIDATE}" ]]; then
-    log "Validando config del USB con ocvalidate..."
-    "${LOCAL_OCVALIDATE}" "${TARGET_EFI_DIR}/OC/config.plist" || {
-        err "ocvalidate falló."
+log "Verificando que el EFI llegó correctamente al USB..."
+
+if [[ ! -f "${TARGET_EFI_DIR}/OC/config.plist" ]]; then
+    err "CRÍTICO: config.plist NO existe en el USB después del rsync."
+    echo "[sync-usb] Contenido real de ${TARGET_EFI_DIR}/OC/ :"
+    ls -la "${TARGET_EFI_DIR}/OC/" 2>/dev/null || echo "  (no se pudo listar)"
+    echo "[sync-usb] Contenido de ${TARGET_EFI_DIR}/ :"
+    ls -la "${TARGET_EFI_DIR}/" 2>/dev/null || echo "  (no se pudo listar)"
+    err "El sync falló. Revisa permisos del punto de montaje o formatea el USB de nuevo."
+    exit 1
+fi
+
+CONFIG_SIZE=$(stat -c%s "${TARGET_EFI_DIR}/OC/config.plist" 2>/dev/null || echo 0)
+SOURCE_SIZE=$(stat -c%s "${SOURCE_EFI_DIR}/OC/config.plist" 2>/dev/null || echo 0)
+
+# Aceptamos el archivo si existe y tiene tamaño razonable (comparamos contra el source)
+if [[ "$CONFIG_SIZE" -lt 1000 ]]; then
+    err "CRÍTICO: config.plist en USB es ridículamente pequeño (${CONFIG_SIZE} bytes)."
+    exit 1
+fi
+
+if [[ "$SOURCE_SIZE" -gt 0 && "$CONFIG_SIZE" -lt $(( SOURCE_SIZE - 2000 )) ]]; then
+    err "CRÍTICO: config.plist en USB parece truncado (USB: ${CONFIG_SIZE} bytes, source: ${SOURCE_SIZE} bytes)."
+    exit 1
+fi
+
+log "config.plist presente en USB (${CONFIG_SIZE} bytes, source era ${SOURCE_SIZE})."
+
+# Buscar ocvalidate en varias ubicaciones posibles
+OCVALIDATE_BIN=""
+for cand in "${LOCAL_OCVALIDATE}" \
+            "${PROJECT_ROOT}/tools/ocvalidate" \
+            "${SCRIPT_DIR}/../tools/ocvalidate" \
+            "$(command -v ocvalidate 2>/dev/null || true)"; do
+    if [[ -x "$cand" ]]; then
+        OCVALIDATE_BIN="$cand"
+        break
+    fi
+done
+
+if [[ -n "$OCVALIDATE_BIN" ]]; then
+    log "Validando config del USB con ocvalidate ($OCVALIDATE_BIN)..."
+    if "$OCVALIDATE_BIN" "${TARGET_EFI_DIR}/OC/config.plist"; then
+        log "ocvalidate: 0 errores en USB."
+    else
+        err "ocvalidate reportó errores en el config del USB."
         exit 1
-    }
-    log "ocvalidate: 0 errores en USB."
+    fi
 else
-    log "ocvalidate no encontrado (se omite)."
+    log "ocvalidate no encontrado en ubicaciones conocidas (se omite validación)."
 fi
 
 sync
+
+# Resumen final claro de lo que realmente quedó en el USB (auto-diagnóstico)
+echo
+log "=== RESUMEN DEL USB (lo que realmente hay ahora) ==="
+echo "[sync-usb] EFI structure:"
+find "${TARGET_EFI_DIR}" -maxdepth 2 -type f 2>/dev/null | sort | sed 's/^/  /' | head -40
+echo
+echo "[sync-usb] OC/config.plist:"
+ls -l "${TARGET_EFI_DIR}/OC/config.plist" 2>/dev/null || echo "  MISSING!"
+echo "[sync-usb] OC/Drivers:"
+ls "${TARGET_EFI_DIR}/OC/Drivers/" 2>/dev/null || echo "  (vacío o inexistente)"
+echo "[sync-usb] OC/Kexts (conteo):"
+find "${TARGET_EFI_DIR}/OC/Kexts" -name "*.kext" -type d 2>/dev/null | wc -l
+echo "==================================================="
+echo
+
 log "Sincronización completada."
 
 # Mostrar perfil actual
