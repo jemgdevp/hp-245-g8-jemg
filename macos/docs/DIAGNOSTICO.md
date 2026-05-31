@@ -287,11 +287,13 @@ OpenCore 1.0.7 + NootedRed. Cada entrada = una causa raíz hallada y corregida.
 - azurejelly (HP 245 G8, mismo modelo): pantalla interna negra + HDMI full con aceleración.
 - Si HDMI muestra el instalador → instalar por HDMI; la pantalla interna se afina después.
 
-### Nota sobre el parche `_mtrr` Not Found
-- Log cont.10: "OC: Kernel patcher result 22 (Shaneee | _mtrr_update_action | Fix PAT) - Not Found".
-- El generador activa TODOS los patches de AMD_Vanilla (Enabled=True). Shaneee y Algrey son
-  entradas separadas; si Shaneee no matchea el kernel de Ventura pero Algrey sí → el PAT fix
-  SE APLICA igual vía Algrey. No es el cuelgue; es un warning benigno.
+### Parche `_mtrr_update_action` "Not Found" — CERRADO como benigno
+- Log cont.10: `OC: Kernel patcher result 22 (Shaneee | _mtrr_update_action | Fix PAT) - Not Found`.
+- AMD_Vanilla incluye DOS entradas para el PAT fix: Shaneee y Algrey. Ambas abordan el
+  mismo patrón pero con firma distinta según versión de kernel. Si Shaneee no matchea el
+  kernel exacto de Ventura pero Algrey sí, **el PAT fix SE APLICA igualmente vía Algrey**.
+- El generador activa TODOS los patches de AMD_Vanilla (Enabled=True). El "Not Found" de
+  Shaneee es un warning de patcher normal; no es el cuelgue. **No requiere acción.**
 
 ### Cambios aplicados (commit `sesión-11`)
 1. **Booter Quirks → esquema MODERNO** (el que usa Otus9051, el 5300U que arranca Ventura):
@@ -315,4 +317,158 @@ OpenCore 1.0.7 + NootedRed. Cada entrada = una causa raíz hallada y corregida.
    realmente no responde *después de esperar >2 min* → sí podría ser un panic real de
    estos kexts (el README de ryzen-hackintosh los marca como optativos y riesgosos).
    Se desactivan + `DummyPowerManagement=True` y se reprueba.
+
+---
+
+## Sesión 2026-05-31 (cierre) — Notas de cierre, deudas técnicas y referencias nuevas
+
+### Referencia nueva: azurejelly (HP 245 G8, Ryzen 5 5500U, mismo chasis)
+- EFI confirmado que arranca Ventura con pantalla interna negra + HDMI full con aceleración.
+  Mismo patrón esperado para nuestro 5300U.
+- SMBIOS: `MacBookPro16,3` (difiere del iMac20,1 actual; a evaluar si HDMI sigue sin funcionar).
+- boot-args: `-btlfxallowanyaddr npci=0x3000 alcid=3 revblock=media revpatch=cpuname,memtab,sbvmm`.
+- Booter Quirks: legacy (`RebuildAppleMemoryMap=False`, `SetupVirtualMap=False`,
+  `SyncRuntimePermissions=False`, `EnableWriteUnprotector=True`). Nota: la sesión 11 aplicó
+  el esquema MODERNO (Otus9051); si cuelga tras ExitBootServices, revertir a legacy.
+- Kexts: NootedRed ON, ForgedInvariant, SIN `SMCAMDProcessor`/`AMDRyzenCPUPowerManagement`.
+- Confirma que el patrón pantalla interna negra + HDMI funcional es normal para este hardware.
+
+### Referencia nueva: kext IntelMKLFixup (presente en azurejelly, ausente en este EFI)
+- Parchea la Intel Math Kernel Library (usada por algunas apps del sistema y apps de terceros)
+  para CPUs AMD; evita crashes al detectar instrucciones no soportadas.
+- **Estado actual:** no incluido. No es bloqueante para el instalador.
+- **Acción futura:** evaluar en fase post-instalación si se observan crashes inexplicables
+  en apps (especialmente apps que usan aceleración numérica: Final Cut, Logic, etc.).
+
+### Kext desactualizado: ForgedInvariant v1.2.0 — actualizar a v1.5.0
+- La versión instalada es **v1.2.0**. La versión upstream (ChefKissInc, Nov 2024) es **v1.5.0**.
+- Mejoras de v1.5.0: "sync to max value across all threads" y "sync early on processPatcher
+  instead of IOService::start" — mejor sincronización TSC en arranque temprano.
+- **Acción:** actualizar antes del próximo arranque de prueba. Descargar de
+  `https://github.com/ChefKissInc/ForgedInvariant/releases` y reemplazar el `.kext` en
+  `EFI/OC/Kexts/`; regenerar con el generador y revalidar con ocvalidate.
+
+### Alerta de flujo de trabajo: NO editar config.plist directamente
+- Durante la sesión 11, `config.plist` fue editado manualmente (NootedRed `Enabled=false`,
+  `-radvesa`) sin pasar por el generador.
+- **CRITICO:** el próximo `python3 scripts/05_generate_config.py` SOBREESCRIBIRÁ esos cambios.
+- Regla operativa: SIEMPRE usar los toggles del generador (`USE_NRED_NO_ACCEL`, `USE_NRED_DP_DELAY`,
+  `USE_MINIMAL_ACPI_FOR_FB_TEST`) y regenerar. NUNCA editar el plist directamente.
+
+### Deuda técnica: NootedRed bug #429 — sleep/wake (FW Injection V2)
+- La versión v1.0.0 milestone de NootedRed tiene abierto el bug #429: sleep/wake regresó
+  con FW Injection V2 (la arquitectura de inyección de firmware del GPU usada desde ~v0.9).
+- **Impacto actual:** ninguno (aún no hemos llegado a la fase de post-instalación).
+- **Impacto futuro:** si el objetivo incluye sleep/wake funcional, este bug es un bloqueador
+  potencial. Revisar el estado del issue cuando se alcance la fase de puesta a punto
+  post-instalación. No diagnosticar como problema propio del EFI.
+
+### Deuda técnica: audio HDMI/DP NO funcional (NootedRed bug #225)
+- NootedRed bug #225 ("no audio playback via HDMI/DP") sigue abierto en el milestone v1.0.0
+  sin fecha de resolución para el hardware Renoir/Lucienne.
+- **Impacto:** el audio por HDMI o DisplayPort no funcionará con NootedRed en este equipo
+  hasta que se resuelva upstream. Es una limitación conocida del kext, no un fallo del EFI.
+- **Regla:** no diagnosticar "audio HDMI no suena" como problema de este EFI ni de la
+  configuración de AppleALC. El audio analógico interno (ALC236, alcid a determinar) es
+  independiente y sí es alcanzable.
+
+### Procedimiento operativo: recuperar arranque UEFI tras formateo del USB
+El firmware HP 245 G8 NO puede usar `LauncherOption=Full/Short` (el Bootstrap falla en este
+firmware; ver cont. 10). El arranque funcional usa una entrada UEFI directa a OpenCore.efi.
+
+**Tras cualquier `mkfs.vfat` del USB o pérdida de la entrada NVRAM:**
+```bash
+# 1. Sincronizar EFI/ completo (incluye instalador si aplica)
+./scripts/06_sync_usb_efi.sh   # o con MOUNT_POINT= si el label no es MACOS
+
+# 2. Restaurar instalador (si se borró con mkfs)
+# Copiar la carpeta com.apple.recovery.boot/ de Ventura a la raíz del USB
+# (NO usar el cache recovery/ de Sequoia en recovery_sequoia/ — board Mac-937A206F2EE63C01)
+
+# 3. Crear entrada UEFI directa (ejecutar UNA VEZ por reformateo; /dev/sdb = USB)
+sudo efibootmgr -c -d /dev/sdb -p 1 -L "OpenCore-HP245" -l '\EFI\OC\OpenCore.efi'
+# Verificar que aparece como Boot0000* y primero en BootOrder:
+efibootmgr -v | head -20
+```
+- La entrada de efibootmgr referencia el USB por GUID GPT, no por device node → funciona
+  en cualquier puerto USB.
+- Si el USB se reformatea, el GUID cambia → la entrada queda huérfana → repetir el paso 3.
+- `LauncherOption` debe permanecer en `Disabled` (no crear entradas NVRAM autorreferenciales).
+
+### Estado del generador al cierre de sesión 2026-05-31
+- **SMBIOS:** iMac20,1 (`Mac-CFF7D910A743CAAF`) — vigente.
+- **Booter Quirks:** esquema MODERNO (Otus9051). Revertir a legacy si cuelga en ExitBootServices.
+- **Kexts:** 18 kexts, power AMD real (AMDRyzenCPUPowerManagement + SMCAMDProcessor v1.6.0).
+- **ForgedInvariant:** v1.2.0 instalado — PENDIENTE actualizar a v1.5.0.
+- **boot-args:** `-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13`.
+- **config.plist en disco:** puede tener ediciones manuales de la sesión 11 que el generador
+  sobreescribirá en el próximo run. Ejecutar el generador antes de la próxima prueba.
+
+---
+
+## Sesión 2026-05-31 (cont. 12) — HITO: Recovery de macOS Ventura arranca
+
+### Hito confirmado
+El instalador de macOS Ventura **arrancó exitosamente** en el HP 245 G8 por primera vez.
+Secuencia de arranque observada: líneas blancas de verbose → logo Apple → pantalla del
+Recovery de macOS Ventura. El sistema llega completamente al entorno del instalador.
+
+### Configuración exacta que funcionó
+
+- **SMBIOS:** iMac20,1 (`Mac-CFF7D910A743CAAF`) — recomendado por ChefKiss para NootedRed en Renoir/Lucienne.
+- **NootedRed:** v0.8.10, **Enabled=True**. Sin DeviceProperties para la iGPU (vacío).
+- **ForgedInvariant:** v1.5.0 (TSC sync; actualizado desde v1.2.0 antes de esta prueba).
+- **AMDRyzenCPUPowerManagement:** **Disabled** (kext desactivado).
+- **SMCAMDProcessor:** **Disabled** (kext desactivado).
+- **DummyPowerManagement:** **True** (power management estándar AMD sin kexts especializados).
+- **Booter Quirks:** esquema **moderno** (Otus9051):
+  `RebuildAppleMemoryMap=True`, `SetupVirtualMap=True`, `SyncRuntimePermissions=True`,
+  `EnableWriteUnprotector=False`, `DevirtualiseMmio=True`, `ProtectUefiServices=True`.
+- **ACPI:** 10 SSDTs (EC, GPRW, USBX, PLUG-ALT, XOSI, PNLF, ALS0, PMC, HPET, USB-Reset)
+  + parche GPRW→XPRW. SSDT-PLUG-ALT.aml = versión AMD (no la Intel estándar).
+- **boot-args:** `-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 -NRedDPDelay`
+  (`-NRedDPDelay` retrasa el link-training del panel eDP interno).
+- **Cadena de arranque:** entrada UEFI directa a `\EFI\OC\OpenCore.efi` vía efibootmgr
+  (el Bootstrap de OpenCore falla en este firmware HP; `LauncherOption=Disabled`).
+- **USB:** puerto USB 2.0 (negro), pendrive con `com.apple.recovery.boot/` de Ventura 13
+  (`Mac-4B682C642B45593E`, BaseSystem.dmg 706568592 B).
+
+### Problema: teclado interno y touchpad no funcionan en el Recovery
+
+- **Síntoma:** una vez en el Recovery de macOS, el teclado interno y el touchpad del portátil
+  **no responden**. No es posible interactuar con el instalador usando los dispositivos del chasis.
+- **Solución temporal confirmada:** un **ratón USB externo SÍ funciona** en el Recovery. Con él
+  se puede navegar la interfaz del instalador y proceder con la instalación de macOS.
+- **Causa probable:** VoodooPS2Controller (el kext que gestiona teclado/touchpad PS/2 en este
+  portátil) no está correctamente configurado para el hardware PS/2 concreto del HP 245 G8,
+  o requiere un SSDT adicional (p.ej. SSDT-PS2K para el mapeo de teclas), o hay una colisión
+  con la inicialización del controlador PS/2 real del chasis. El teclado/touchpad del HP 245 G8
+  se comunica por I2C o por PS/2 — verificar en la DSDT el path del controlador.
+- **No es bloqueante para la instalación:** con el ratón USB externo se puede completar la
+  instalación de macOS. El teclado/touchpad se afina en fase post-instalación.
+
+### Próximos pasos
+
+1. **[USUARIO — inmediato]** Completar la instalación de macOS Ventura usando el ratón USB
+   externo. Seleccionar disco destino (NVMe Kingston NV3), iniciar la instalación y esperar
+   el proceso de copia + reinicios. Usar siempre el USB en puerto USB 2.0.
+
+2. **[YO — investigar VoodooPS2Controller]** Tras la instalación, diagnosticar el teclado/touchpad:
+   - Verificar en `docs/DSDT.dsl` si el controlador PS/2 está bajo `\_SB.PCI0.SBRG.PS2K` o
+     si el teclado es realmente I2C (VoodooI2C en lugar de VoodooPS2).
+   - Comparar con el EFI de Otus9051 (5300U exacto): ¿usa VoodooPS2 o VoodooI2C?
+   - Comparar con azurejelly (HP 245 G8, mismo chasis): su configuración de input devices.
+   - Si es PS/2 real: añadir SSDT-PS2K o VoodooPS2Controller versión compatible con el
+     controlador Synaptics/ELAN del HP 245 G8.
+   - Si es I2C: reemplazar VoodooPS2 por VoodooI2C + VoodooI2CHID.
+
+3. **[Deuda técnica post-instalación]** Una vez macOS instalado y arrancando desde disco:
+   - USB mapping real con UTBMap (USBToolBox en macOS, no el UTBDefault genérico).
+   - Audio ALC236: probar layouts alternativos a `alcid=13` si el audio no funciona.
+   - Evaluar kext `IntelMKLFixup` (presente en azurejelly) para evitar crashes en apps AMD.
+   - Evaluar `AMDRyzenCPUPowerManagement` + `SMCAMDProcessor` con `DummyPowerManagement=False`
+     una vez el sistema esté estable (mejora la gestión de frecuencia/temperatura).
+   - Pantalla interna (eDP): si sigue negra tras instalar, investigar SSDT-eDP o parámetros
+     de link-training de NootedRed para el panel 1366x768 de Lucienne.
+   - Actualizar ForgedInvariant si sale versión posterior a v1.5.0.
 
