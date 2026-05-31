@@ -47,14 +47,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Handle Swarm Command
         run: |
-          COMMENT_BODY_FILE=$(mktemp)
-          printf '%s' "${{ github.event.comment.body }}" > "$COMMENT_BODY_FILE"
-          if grep -q '^/swarm' "$COMMENT_BODY_FILE"; then
+          if [[ "${{ github.event.comment.body }}" == /swarm* ]]; then
             npx ruv-swarm github handle-comment \
               --pr ${{ github.event.pull_request.number }} \
-              --comment-file "$COMMENT_BODY_FILE"
+              --comment "${{ github.event.comment.body }}"
           fi
-          rm -f "$COMMENT_BODY_FILE"
 ```
 
 ## PR Label Integration

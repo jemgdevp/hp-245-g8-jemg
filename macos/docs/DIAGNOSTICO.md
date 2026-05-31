@@ -148,3 +148,17 @@ OpenCore 1.0.7 + NootedRed. Cada entrada = una causa raíz hallada y corregida.
   nosotros mantenemos NUESTROS 10 SSDTs (validados vs DSDT real). 
 - Pendiente: arrancar. Si funciona -> era SMBIOS/power management. Si no -> evaluar
   probar el EFI Otus casi tal cual, o cambiar a Sonoma.
+
+## Sesión 2026-05-31 (cont. 6) — alineación del generador + verificación post-Otus
+- `python3 -m py_compile scripts/05_generate_config.py` → **COMPILA OK** (sin errores de sintaxis tras los edits de quirks/kexts/SMBIOS).
+- Ejecutado `python3 scripts/05_generate_config.py`:
+  - SMBIOS: iMac20,1 | 18 kexts | 25 patches AMD_Vanilla (cores=4)
+  - DisableIoMapper=True, DummyPowerManagement=False, ReleaseUsbOwnership=True
+  - boot-args: -v keepsyms=1 debug=0x100 npci=0x3000 alcid=13
+  - Power kexts (AMDRyzenCPUPowerManagement + SMCAMDProcessor) presentes con binarios
+  - ocvalidate local: "No issues found"
+- Script 06_sync_usb_efi.sh mejorado: rsync completo de EFI/OC (--delete), defaults a /run/media/$USER/MACOS, validación ocvalidate post-sync.
+- Estado del generador: 100% alineado con la receta del Otus9051 (5300U que arranca). UUID/ROM se regeneran en cada run (diseño intencional).
+- Pendiente inmediato del usuario: insertar USB → correr `./scripts/06_sync_usb_efi.sh` (o con MOUNT_POINT explícito) → arrancar en puerto USB 2.0.
+- Próxima prueba: con la receta Otus completa (power AMD real + iMac20,1 + DisableIoMapper). Si aún cuelga en framebuffer → siguiente bisección es NootedRed nightly más reciente o ACPI minimal del Otus (PLUG-ALT + rmne + RTCAWAC).
+

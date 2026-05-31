@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-OpenCore config.plist generator for AMD Ryzen 3 5300U (Renoir, Zen 2).
-Target: macOS Sonoma, SMBIOS MacBookPro16,3.
+OpenCore config.plist generator for AMD Ryzen 3 5300U (Lucienne/Renoir Zen 2 APU).
+Target: macOS Ventura 13 (or newer), SMBIOS iMac20,1 (receta Otus9051 exact-CPU + ChefKiss NootedRed prereqs).
+See macos/docs/DIAGNOSTICO.md for full bisection history.
 """
 
 import os
@@ -67,17 +68,25 @@ KEXTS = [
     ("RestrictEvents", "x86_64", "",    "",     False),
 ]
 
-# boot-args alineados con el EFI de referencia del MISMO modelo (HP 245 G8):
+# boot-args alineados con el EFI de referencia del MISMO modelo (HP 245 G8) + Otus9051 (exact 5300U que arranca):
 #   -v keepsyms=1 debug=0x100  → verbose + símbolos en panics (diagnóstico)
 #   npci=0x3000                → evita el cuelgue en [PCI configuration begin]
-#                                (BIOS HP sin opción Above4G accesible)
-#   revblock=media             → RestrictEvents: bloquea mediaanalysisd (AMD)
-#   revpatch=cpuname,memtab,sbvmm → nombre CPU + tabla memoria + permite instalar
-#   alcid=1                    → layout de audio (inocuo durante instalación)
-#   -NRedDPDelay               → NootedRed: retrasa el link-training del panel
-#                                interno (eDP). Arregla pantalla negra/reinicio
-#                                del framebuffer interno en laptops Renoir.
-BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13"
+#                                (BIOS HP sin opción Above4G accesible; Dortania AMD Zen confirma)
+#   alcid=13                   → layout audio Realtek ALC236 (probado en Otus 5300U + ChefKiss)
+#   -NRedDPDelay               → NootedRed: retrasa el link-training del panel interno (eDP).
+#                                Arregla black screen / framebuffer hang en muchos Renoir/Lucienne
+#                                con paneles eDP (común en laptops HP). Ver ChefKiss FAQ + issues.
+#                                (Estaba documentado pero ausente en la versión post-Otus; live config lo confirma.)
+#   (Test) -NRedNoAccel        → Deshabilita aceleración Metal temporalmente (útil para aislar).
+#                                Reversible; quitar una vez funcione el FB.
+#
+# Fuentes indexadas (esta sesión + DIAGNOSTICO):
+#   - ChefKiss NootedRed (chefkiss.dev/applehax/nootedred): Vega Raven full (5300U Lucienne OK),
+#     SMBIOS iMac20,1/MacBookPro16,2/iMacPro1,1, VRAM 1GiB+, NootedRed 0.8.10 latest (May 2026),
+#     backlight: SSDT-PNLF+ALS0 + SMCLightSensor + BrightnessKeys (todos presentes).
+#   - Dortania AMD Zen: npci=0x3000 para HP sin Above4G, DeviceProperties iGPU vacío OK para la mayoría.
+#   - Otus9051: mismo CPU exacto, external HDMI funciona, alcid=13.
+BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 -NRedDPDelay"
 # Cpuid1Data VACÍO: en AMD los parches AMD_Vanilla ya fijan la familia de CPU.
 # Inyectar un Cpuid1Data spoofeado de Intel ENCIMA de esos parches provoca un
 # kernel panic tempranísimo (negro + reinicio sin verbose). El EFI de referencia
@@ -379,7 +388,7 @@ def build_config():
     template["UEFI"]["Quirks"].update({
         "IgnoreInvalidFlexRatio": False,  # quirk Intel; no aplica a AMD
         "ForgeUefiSupport": False,        # firmware moderno: no forzar UEFI 2.x
-        "ReleaseUsbOwnership": False,
+        "ReleaseUsbOwnership": True,      # receta Otus9051 (5300U que arranca)
         "RequestBootVarRouting": True,
         "ResizeGpuBars": -1,
         "DisableSecurityPolicy": False,   # innecesario; el EFI de referencia=False

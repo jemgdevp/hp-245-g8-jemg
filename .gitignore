@@ -50,21 +50,42 @@ package-lock.json
 pnpm-lock.yaml
 pnpm-workspace.yaml
 .mcp.json
+
 # Bases de datos y estado de runtime de ruflo
 *.db
 ruvector.db
 .swarm/
-# Runtime/caché generado dentro de .claude por ruflo
+
+# Runtime/caché generado dentro de .claude por ruflo (solo cachés y generados)
 .claude/memory.db
 .claude/*.db
 .claude/statusline.*
-.claude/helpers/*.cjs
-.claude/helpers/*.mjs
-.claude/agents/core/coder.md
-.claude/agents/core/researcher.md
-.claude/agents/core/reviewer.md
-.claude/agents/core/tester.md
 .claude/agents/testing/unit/
 .claude/agents/testing/validation/
+
+# Sesiones y artefactos de herramientas AI (Grok, Claude, etc.)
+.grok/
+.comments/
+Pasted image*.png
+IMG_*.JPEG
+IMG_*.JPG
+IMG_*.PNG
+IMG_*.MOV
+IMG_*.MP4
+
+# ── Referencias EFI clonadas (mantener solo lo útil para comparar) ──
+# Otus9051 (HP 15s con Ryzen 3 5300U exacto) — igual que hp-245-g8-efi-base
+macos/docs/otus9051-hp15s/Resources/
+macos/docs/otus9051-hp15s/Drivers/
+macos/docs/otus9051-hp15s/Tools/
+macos/docs/otus9051-hp15s/OpenCore.efi
+macos/docs/otus9051-hp15s/Kexts/
+macos/docs/otus9051-hp15s/**/MacOS/
+macos/docs/otus9051-hp15s/**/_CodeSignature/
+
+# ACPI compilados cuando existe fuente .dsl (en acpi_src/)
+macos/acpi_src/*.aml
+
+# DSDT extraídos (se regeneran)
 macos/docs/DSDT.aml
 macos/docs/DSDT.dsl

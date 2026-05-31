@@ -97,7 +97,7 @@
 				<key>BaseSkip</key>
 				<integer>0</integer>
 				<key>Comment</key>
-				<string>change Method(GPRW,2,N) to XPRW, pair with SSDT-GPRW.aml</string>
+				<string>change GPRW to XPRW</string>
 				<key>Count</key>
 				<integer>0</integer>
 				<key>Enabled</key>
@@ -269,13 +269,13 @@
 				<key>Arch</key>
 				<string>x86_64</string>
 				<key>BundlePath</key>
-				<string>AMDRyzenCPUPowerManagement.kext</string>
+				<string>ForgedInvariant.kext</string>
 				<key>Comment</key>
-				<string>AMDRyzenCPUPowerManagement</string>
+				<string>ForgedInvariant</string>
 				<key>Enabled</key>
 				<true/>
 				<key>ExecutablePath</key>
-				<string>Contents/MacOS/AMDRyzenCPUPowerManagement</string>
+				<string>Contents/MacOS/ForgedInvariant</string>
 				<key>MaxKernel</key>
 				<string></string>
 				<key>MinKernel</key>
@@ -305,13 +305,13 @@
 				<key>Arch</key>
 				<string>x86_64</string>
 				<key>BundlePath</key>
-				<string>ForgedInvariant.kext</string>
+				<string>AMDRyzenCPUPowerManagement.kext</string>
 				<key>Comment</key>
-				<string>ForgedInvariant (TSC sync AMD, reemplaza AmdTscSync)</string>
+				<string>AMDRyzenCPUPowerManagement</string>
 				<key>Enabled</key>
 				<true/>
 				<key>ExecutablePath</key>
-				<string>Contents/MacOS/ForgedInvariant</string>
+				<string>Contents/MacOS/AMDRyzenCPUPowerManagement</string>
 				<key>MaxKernel</key>
 				<string></string>
 				<key>MinKernel</key>
@@ -1229,7 +1229,7 @@
 				<key>Count</key>
 				<integer>1</integer>
 				<key>Enabled</key>
-				<false/>
+				<true/>
 				<key>Find</key>
 				<data>
 				hAB1Sw==
@@ -1343,7 +1343,7 @@
 				<key>Count</key>
 				<integer>0</integer>
 				<key>Enabled</key>
-				<false/>
+				<true/>
 				<key>Find</key>
 				<data>
 				icCB4v//AP+BygAAAQC5dwIAAA==
@@ -1417,7 +1417,7 @@
 				<key>Count</key>
 				<integer>0</integer>
 				<key>Enabled</key>
-				<false/>
+				<true/>
 				<key>Find</key>
 				<data>
 				icCB4v//AP+BygAAAAAPMA==
@@ -1743,7 +1743,7 @@
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>EFCC9C1A-9920-4A8B-ABFC-1B5E2436AD72</string>
+			<string>D38D3CFC-804B-4A79-970D-A932A5E7D1E7</string>
 		</dict>
 		<key>Generic</key>
 		<dict>
@@ -1757,7 +1757,7 @@
 			<integer>0</integer>
 			<key>ROM</key>
 			<data>
-			UgI/NDQC
+			BBI8G9IR
 			</data>
 			<key>SpoofVendor</key>
 			<true/>
@@ -1768,7 +1768,7 @@
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>EFCC9C1A-9920-4A8B-ABFC-1B5E2436AD72</string>
+			<string>D38D3CFC-804B-4A79-970D-A932A5E7D1E7</string>
 		</dict>
 		<key>PlatformNVRAM</key>
 		<dict>
@@ -1784,12 +1784,12 @@
 			<string>C02038201LDPN6P1H</string>
 			<key>ROM</key>
 			<data>
-			UgI/NDQC
+			BBI8G9IR
 			</data>
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>EFCC9C1A-9920-4A8B-ABFC-1B5E2436AD72</string>
+			<string>D38D3CFC-804B-4A79-970D-A932A5E7D1E7</string>
 		</dict>
 		<key>SMBIOS</key>
 		<dict>
@@ -1847,7 +1847,7 @@
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>EFCC9C1A-9920-4A8B-ABFC-1B5E2436AD72</string>
+			<string>D38D3CFC-804B-4A79-970D-A932A5E7D1E7</string>
 			<key>SystemVersion</key>
 			<string>1.0</string>
 		</dict>

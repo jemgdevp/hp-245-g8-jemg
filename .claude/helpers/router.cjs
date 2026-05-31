@@ -16,14 +16,11 @@ const AGENT_CAPABILITIES = {
 };
 
 const TASK_PATTERNS = {
-  // Code patterns
   'implement|create|build|add|write code': 'coder',
   'test|spec|coverage|unit test|integration': 'tester',
   'review|audit|check|validate|security': 'reviewer',
   'research|find|search|documentation|explore': 'researcher',
   'design|architect|structure|plan': 'architect',
-
-  // Domain patterns
   'api|endpoint|server|backend|database': 'backend-dev',
   'ui|frontend|component|react|css|style': 'frontend-dev',
   'deploy|docker|ci|cd|pipeline|infrastructure': 'devops',
@@ -32,7 +29,6 @@ const TASK_PATTERNS = {
 function routeTask(task) {
   const taskLower = task.toLowerCase();
 
-  // Check patterns
   for (const [pattern, agent] of Object.entries(TASK_PATTERNS)) {
     const regex = new RegExp(pattern, 'i');
     if (regex.test(taskLower)) {
@@ -44,7 +40,6 @@ function routeTask(task) {
     }
   }
 
-  // Default to coder for unknown tasks
   return {
     agent: 'coder',
     confidence: 0.5,
@@ -52,15 +47,16 @@ function routeTask(task) {
   };
 }
 
-// CLI
-const task = process.argv.slice(2).join(' ');
-
-if (task) {
-  const result = routeTask(task);
-  console.log(JSON.stringify(result, null, 2));
-} else {
-  console.log('Usage: router.js <task description>');
-  console.log('\nAvailable agents:', Object.keys(AGENT_CAPABILITIES).join(', '));
-}
-
 module.exports = { routeTask, AGENT_CAPABILITIES, TASK_PATTERNS };
+
+// CLI - only run when executed directly
+if (require.main === module) {
+  const task = process.argv.slice(2).join(' ');
+  if (task) {
+    const result = routeTask(task);
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log('Usage: router.js <task description>');
+    console.log('\nAvailable agents:', Object.keys(AGENT_CAPABILITIES).join(', '));
+  }
+}
