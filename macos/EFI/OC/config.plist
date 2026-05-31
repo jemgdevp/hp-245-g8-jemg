@@ -64,6 +64,14 @@
 			</dict>
 			<dict>
 				<key>Comment</key>
+				<string>SSDT-PS2K</string>
+				<key>Enabled</key>
+				<true/>
+				<key>Path</key>
+				<string>SSDT-PS2K.aml</string>
+			</dict>
+			<dict>
+				<key>Comment</key>
 				<string>SSDT-USBX</string>
 				<key>Enabled</key>
 				<true/>
@@ -1737,7 +1745,7 @@
 			<key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
 			<dict>
 				<key>boot-args</key>
-				<string>-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 -NRedDPDelay</string>
+				<string>-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 -NRedDPDelay voodooI2CPoling=1</string>
 				<key>csr-active-config</key>
 				<data>
 				AwgAAA==
@@ -1802,7 +1810,7 @@
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>C42C3713-86D9-4B2D-8EFB-A7F327F7876F</string>
+			<string>CA48CE71-CC30-476E-BAAE-FED7107B2C7F</string>
 		</dict>
 		<key>Generic</key>
 		<dict>
@@ -1816,7 +1824,7 @@
 			<integer>0</integer>
 			<key>ROM</key>
 			<data>
-			CJYW8Ul3
+			YNfgUN1H
 			</data>
 			<key>SpoofVendor</key>
 			<true/>
@@ -1827,7 +1835,7 @@
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>C42C3713-86D9-4B2D-8EFB-A7F327F7876F</string>
+			<string>CA48CE71-CC30-476E-BAAE-FED7107B2C7F</string>
 		</dict>
 		<key>PlatformNVRAM</key>
 		<dict>
@@ -1843,12 +1851,12 @@
 			<string>C02038201LDPN6P1H</string>
 			<key>ROM</key>
 			<data>
-			CJYW8Ul3
+			YNfgUN1H
 			</data>
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>C42C3713-86D9-4B2D-8EFB-A7F327F7876F</string>
+			<string>CA48CE71-CC30-476E-BAAE-FED7107B2C7F</string>
 		</dict>
 		<key>SMBIOS</key>
 		<dict>
@@ -1906,7 +1914,7 @@
 			<key>SystemSerialNumber</key>
 			<string>C02DH0E0PN6P</string>
 			<key>SystemUUID</key>
-			<string>C42C3713-86D9-4B2D-8EFB-A7F327F7876F</string>
+			<string>CA48CE71-CC30-476E-BAAE-FED7107B2C7F</string>
 			<key>SystemVersion</key>
 			<string>1.0</string>
 		</dict>

@@ -98,7 +98,13 @@ USE_NRED_DP_DELAY = True
 USE_NRED_NO_ACCEL = False
 _NRED_EXTRA = " -NRedDPDelay" if USE_NRED_DP_DELAY else ""
 _NRED_EXTRA += " -NRedNoAccel" if USE_NRED_NO_ACCEL else ""
-BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13" + _NRED_EXTRA
+# voodooI2CPoling=1: fuerza polling en VoodooI2C (evita depender de GPIO AMD para
+# las interrupciones del touchpad ELAN0708). Necesario si VoodooGPIO no gestiona
+# el controlador GPIO de este Lucienne. El typo "Poling" (1 ele) es intencional
+# — así está en el código fuente de VoodooI2C.
+USE_I2C_POLLING = True
+_I2C_EXTRA = " voodooI2CPoling=1" if USE_I2C_POLLING else ""
+BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13" + _NRED_EXTRA + _I2C_EXTRA
 # Cpuid1Data VACÍO: en AMD los parches AMD_Vanilla ya fijan la familia de CPU.
 # Inyectar un Cpuid1Data spoofeado de Intel ENCIMA de esos parches provoca un
 # kernel panic tempranísimo (negro + reinicio sin verbose). El EFI de referencia
@@ -239,7 +245,7 @@ def build_config():
         # Set completo (tu versión actual, validada contra DSDT)
         ACPI_SSDTS = [
             "SSDT-ALS0", "SSDT-EC", "SSDT-GPRW", "SSDT-HPET", "SSDT-PLUG-ALT",
-            "SSDT-PMC", "SSDT-PNLF", "SSDT-USBX", "SSDT-XOSI", "SSDT-USB-Reset",
+            "SSDT-PMC", "SSDT-PNLF", "SSDT-PS2K", "SSDT-USBX", "SSDT-XOSI", "SSDT-USB-Reset",
         ]
 
     # SSDTs del HP 245 G8. SSDT-PLUG-ALT (no SSDT-PLUG): la versión Intel de PLUG
