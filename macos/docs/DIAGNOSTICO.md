@@ -131,3 +131,20 @@ OpenCore 1.0.7 + NootedRed. Cada entrada = una causa raíz hallada y corregida.
   fija por config.plist. DeviceProperties de la iGPU debe seguir VACÍO (correcto).
 - Pendiente: arrancar y ver si ahora pasa el framebuffer (la hipótesis VRAM se prueba
   solo arrancando; nada que editar).
+
+## Sesión 2026-05-31 — receta Otus9051 (EFI del 5300U EXACTO que arranca)
+- VRAM a 2GB NO resolvió el cuelgue del framebuffer -> descartada como causa única.
+- Hallazgo del usuario (vía Grok): repo Otus9051/Hackintosh-HP-15s-eq2144au, EFI que
+  arranca Ventura en Ryzen 3 5300U EXACTO (Vega 6). Clonado en docs/otus9051-hp15s.
+- Su receta de gráficos CONFIRMA la nuestra: NootedRed sin DeviceProperties iGPU.
+  Pero difiere en 5 cosas -> aplicadas a nuestro EFI (commit `1c8f1f9`):
+  1. SMBIOS iMac20,1 (no MacBookPro16,2). board-id Mac-CFF7D910A743CAAF.
+  2. +AMDRyzenCPUPowerManagement +SMCAMDProcessor (v1.6.0) y DummyPowerManagement=False.
+  3. DisableIoMapper=True. 4. ReleaseUsbOwnership=True.
+  5. boot-args limpios: "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13".
+- NootedRed se queda en 0.8.10 (el "1.0.0" del Otus es build viejo; 0.8.10 es el
+  release oficial más nuevo). DeviceProperties iGPU vacío (igual que Otus).
+- Diferencias de hardware Otus(HP 15s) vs nuestro(245 G8): su ACPI es de su chasis;
+  nosotros mantenemos NUESTROS 10 SSDTs (validados vs DSDT real). 
+- Pendiente: arrancar. Si funciona -> era SMBIOS/power management. Si no -> evaluar
+  probar el EFI Otus casi tal cual, o cambiar a Sonoma.
