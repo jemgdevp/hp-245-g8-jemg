@@ -86,7 +86,10 @@ KEXTS = [
 #     backlight: SSDT-PNLF+ALS0 + SMCLightSensor + BrightnessKeys (todos presentes).
 #   - Dortania AMD Zen: npci=0x3000 para HP sin Above4G, DeviceProperties iGPU vacío OK para la mayoría.
 #   - Otus9051: mismo CPU exacto, external HDMI funciona, alcid=13.
-BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 -NRedDPDelay"
+# Fácil toggle para bisección de NootedRed framebuffer (ver image5 + DIAGNOSTICO)
+USE_NRED_DP_DELAY = True
+_NRED_EXTRA = " -NRedDPDelay" if USE_NRED_DP_DELAY else ""
+BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13" + _NRED_EXTRA
 # Cpuid1Data VACÍO: en AMD los parches AMD_Vanilla ya fijan la familia de CPU.
 # Inyectar un Cpuid1Data spoofeado de Intel ENCIMA de esos parches provoca un
 # kernel panic tempranísimo (negro + reinicio sin verbose). El EFI de referencia
@@ -212,6 +215,25 @@ def build_config():
 
     template["ACPI"]["Quirks"]["ResetLogoStatus"] = True
 
+    # === ACPI PROFILE (fácil de cambiar para bisección) ===
+    # FULL = tu set validado (10 SSDTs) — produce los AE_ALREADY_EXISTS de image5
+    # MINIMAL = más cercano al Otus9051 (mismo 5300U que arranca) —  menos colisiones
+    USE_MINIMAL_ACPI_FOR_FB_TEST = False
+
+    if USE_MINIMAL_ACPI_FOR_FB_TEST:
+        ACPI_SSDTS = [
+            "SSDT-ALS0", "SSDT-EC", "SSDT-PLUG", "SSDT-PNLF",
+            "SSDT-USBX", "SSDT-XOSI",
+            # Añade "SSDT-RTCAWAC", "SSDT-RMNE" si tu DSDT los necesita
+        ]
+        print("  [FB TEST] Usando set ACPI MINIMAL estilo Otus (menos colisiones)")
+    else:
+        # Set completo (tu versión actual, validada contra DSDT)
+        ACPI_SSDTS = [
+            "SSDT-ALS0", "SSDT-EC", "SSDT-GPRW", "SSDT-HPET", "SSDT-PLUG",
+            "SSDT-PMC", "SSDT-PNLF", "SSDT-USBX", "SSDT-XOSI", "SSDT-USB-Reset",
+        ]
+
     # SSDTs reales del HP 245 G8 (copiados del EFI de referencia del mismo modelo,
     # en docs/hp-245-g8-efi-base). Arrancar SIN SSDTs colgaba la enumeración PCI
     # (Couldn't alloc AppleKeyStoreTest / "pci ... flags 0xc000"). El crítico es
@@ -225,10 +247,6 @@ def build_config():
     # re-enumere el USB desde cero. Fix del cuelgue en la enumeración USB/PCI
     # (freeze tras AppleKeyStoreTest). Paths validados contra docs/DSDT.aml:
     # \_SB.PCI0.GP17.XHC0.RHUB y XHC1.RHUB (sin _STA propio -> sin parche XSTA).
-    ACPI_SSDTS = [
-        "SSDT-ALS0", "SSDT-EC", "SSDT-GPRW", "SSDT-HPET", "SSDT-PLUG",
-        "SSDT-PMC", "SSDT-PNLF", "SSDT-USBX", "SSDT-XOSI", "SSDT-USB-Reset",
-    ]
     template["ACPI"]["Add"] = [
         {"Comment": s, "Enabled": True, "Path": f"{s}.aml"} for s in ACPI_SSDTS
     ]
@@ -459,6 +477,8 @@ def build_config():
     print(f"  Patches:     {len(patches)}")
     print(f"  Kexts:       {len(KEXTS)}")
     print(f"  Boot args:   {BOOT_ARGS}")
+    print(f"  -NRedDPDelay: {USE_NRED_DP_DELAY}")
+    print(f"  ACPI minimal test: {USE_MINIMAL_ACPI_FOR_FB_TEST}")
     print()
     print("  NEXT:")
     print("    Copy EFI/ to USB and boot.")
