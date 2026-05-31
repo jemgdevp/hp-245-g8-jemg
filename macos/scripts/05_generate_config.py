@@ -43,6 +43,10 @@ KEXTS = [
     # desincronizado cuelga la fase tardía del arranque (AppleCredentialManager/
     # AppleKeyStore). Lo usa el EFI de referencia del mismo HP 245 G8.
     ("ForgedInvariant", "x86_64", "",  "",      False),
+    # Power management AMD real (receta Otus9051, el EFI del 5300U que arranca):
+    # sustituyen a DummyPowerManagement=True. Dependen de Lilu+VirtualSMC.
+    ("SMCAMDProcessor", "x86_64", "", "", False),
+    ("AMDRyzenCPUPowerManagement", "x86_64", "", "", False),
     ("SMCBatteryManager", "x86_64", "", "",    False),
     # SMCProcessor (Intel-only) y SMCDellSensors (Dell) eliminados: inútiles/
     # ruidosos en un HP con Ryzen; el log rechazaba SMCDellSensors.
@@ -258,7 +262,7 @@ def build_config():
     template["Kernel"]["Quirks"].update({
         "AppleXcpmCfgLock": False,   # Intel-only; innecesario en AMD
         "CustomSMBIOSGuid": False,
-        "DisableIoMapper": False,
+        "DisableIoMapper": True,    # receta Otus9051 (EFI del 5300U que arranca)
         "DisableLinkeditJettison": True,
         "LapicKernelPanic": True,   # AMD: evita panic por LAPIC; la ref lo usa
         "PanicNoKextDump": True,
@@ -271,7 +275,9 @@ def build_config():
     template["Kernel"]["Emulate"].update({
         "Cpuid1Data": CPUID1_DATA,
         "Cpuid1Mask": CPUID1_MASK,
-        "DummyPowerManagement": True,
+        # False: usamos AMDRyzenCPUPowerManagement+SMCAMDProcessor (receta Otus9051,
+        # el EFI del 5300U que arranca), no el dummy.
+        "DummyPowerManagement": False,
     })
 
     template["Misc"]["Boot"].update({
