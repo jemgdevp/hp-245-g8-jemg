@@ -95,3 +95,30 @@ OpenCore 1.0.7 + NootedRed. Cada entrada = una causa raíz hallada y corregida.
   USB 2.0 (no 3.0/azul) — reduce la complejidad de enumeración USB en esta fase.
 - Si AÚN cuelga: queda el NVMe Kingston NV3 DRAM-less (probar SSDT que lo deshabilite o
   `nvme=-1`), o clonar la EFI de azurejelly tal cual.
+
+## Sesión 2026-05-30 (cont. 4) — GIRO: el cuelgue NO es PCI, es el FRAMEBUFFER
+- Workflow de investigación profunda (8 agentes, 610k tokens). Hallazgo decisivo:
+  **`pci (build...) flags 0xc000` es un banner INFORMATIVO de IOPCIFamily, NO un
+  error**. La enumeración PCI YA pasó. El verbose se corta ahí porque lo siguiente
+  es la inicialización del framebuffer del iGPU Lucienne (toma el panel eDP, el
+  mismo canal del verbose). Fuente: apple-oss IOPCIFamily/IOPCIConfigurator.cpp.
+  -> Veníamos atacando la fase equivocada (npci, SSDTs bridge, parches PCI).
+- `Couldn't alloc class AppleKeyStoreTest` = línea benigna, no el cuelgue.
+- **Causa real más probable:** framebuffer del iGPU Lucienne (NootedRed/eDP).
+  Pista clave: el 5500U (Vega 7, **1GB VRAM**) arranca; el 5300U (Vega 6, **512MB
+  VRAM**) no -> sospechoso #1 = VRAM <1GB (umbral NootedRed).
+- `nvme=-1` retirado (commit `1cbf8af`): prueba inválida. NVMeFix ya presente.
+- NO volver a tocar: npci, parches PCI, SSDTs de bridge, Cpuid1Data, core-count.
+
+### PLAN (post-giro), por confianza×facilidad:
+1. [USUARIO, decisivo, gratis] Arrancar y conectar **monitor HDMI externo** + hacer
+   **ping** al equipo desde otro dispositivo. Distingue "negro pero vivo"
+   (=framebuffer/eDP) de "cuelgue real de I/O". Si el HDMI muestra el instalador ->
+   instalar por HDMI.
+2. [YO] Aislar GPU: NootedRed.kext **Enabled=False** + `-radvesa` (distinto de
+   -NRedNoAccel, que sigue cargando el kext). Si arranca en VESA -> es NootedRed.
+3. [USUARIO] Subir UMA/VRAM a >=1GB con **Smokeless-UMAF** (BIOS HP lo oculta).
+4. [YO] SMBIOS MacBookPro16,3 (el de la ref que arranca).
+5. [USUARIO] Si 1-4 fallan: instalar **Sonoma 14** (no Monterey), versión de la ref.
+- Veredicto del workflow: alcanzable; última milla = framebuffer; único límite duro
+  plausible = VRAM 512MB. NO es el NVMe (no comprar disco aún).
