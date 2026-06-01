@@ -35,39 +35,50 @@ BOARD_ID = "Mac-CFF7D910A743CAAF"  # board-id oficial de iMac20,1 (receta Otus, 
 # el arranque SMP/PCI.
 PHYSICAL_CORES = 4
 
+# Formato: (bundle_path, arch, minkernel, maxkernel, noexec)
+# Para sub-plugins: bundle_path = "Parent.kext/Contents/PlugIns/PluginName"
+# (sin la extensión final; kext_entry la añade automáticamente)
+# OpenCore NO inyecta PlugIns automáticamente: cada sub-plugin debe declararse.
+# Orden crítico: plugins ANTES que el bundle padre que los registra.
 KEXTS = [
     ("Lilu",        "x86_64", "",      "",      False),
     # Codeless: evita panics de AppleMCEReporter en AMD ≥ macOS 12.3
     ("AppleMCEReporterDisabler", "x86_64", "", "", True),
     ("VirtualSMC",  "x86_64", "",      "",      False),
-    # ForgedInvariant: TSC-sync de ChefKiss (reemplaza AmdTscSync). El TSC
-    # desincronizado cuelga la fase tardía del arranque (AppleCredentialManager/
-    # AppleKeyStore). Lo usa el EFI de referencia del mismo HP 245 G8.
+    # ForgedInvariant: TSC-sync de ChefKiss (reemplaza AmdTscSync).
     ("ForgedInvariant", "x86_64", "",  "",      False),
-    # Power management AMD real (receta Otus9051, el EFI del 5300U que arranca):
-    # sustituyen a DummyPowerManagement=True. Dependen de Lilu+VirtualSMC.
+    # AMD PM kexts — OFF hasta instalar (kernel panic con v0.7.2 + esta config)
     ("SMCAMDProcessor", "x86_64", "", "", False),
     ("AMDRyzenCPUPowerManagement", "x86_64", "", "", False),
     ("SMCBatteryManager", "x86_64", "", "",    False),
-    # SMCProcessor (Intel-only) y SMCDellSensors (Dell) eliminados: inútiles/
-    # ruidosos en un HP con Ryzen; el log rechazaba SMCDellSensors.
     ("SMCSuperIO",     "x86_64", "",    "",     False),
     ("SMCLightSensor", "x86_64", "",    "",     False),
-    # NootedRed NO se desactiva durante la instalación: Renoir/Lucienne NO tiene
-    # framebuffer básico en macOS; sin este kext no hay imagen tras ExitBootServices
-    # (pantalla negra). El generador lo deja Enabled=True como todos; el 5º campo es
-    # noexec (False = tiene binario en Contents/MacOS, no es codeless).
+    # NootedRed ON desde la instalación (Renoir/Lucienne no tiene framebuffer básico sin él)
     ("NootedRed",      "x86_64", "",    "",     False),
     ("AppleALC",       "x86_64", "",    "",     False),
     ("AppleALCU",      "x86_64", "23.0.0", "", False),
     ("USBToolBox",     "x86_64", "",    "",     False),
     ("UTBDefault",     "Any",    "",    "",     True),
-    # Touchpad ELAN0708 está en bus I2C (AMDI0010/I2CD, confirmado en DSDT + Report.json).
-    # VoodooI2C gestiona el controlador AMD; VoodooI2CHID enlaza el dispositivo HID I2C.
-    # Ambos presentes en las refs hp-245-g8-efi-base y otus9051; ausentes = touchpad mudo.
+    # ── Input: PS/2 teclado ──────────────────────────────────────────────────
+    # VoodooPS2Controller bundle raíz (gestiona el nub i8042)
+    ("VoodooPS2Controller", "x86_64", "", "",   False),
+    # Sub-plugins PS2 (deben declararse explícitamente; OpenCore no los inyecta solo)
+    # VoodooInput del PS2 desactivado: solo debe haber una instancia de VoodooInput
+    # activa. La del I2C es la que gestiona el touchpad; la del PS2 es redundante
+    # y causa corrupción de eventos si ambas cargan.
+    ("VoodooPS2Controller.kext/Contents/PlugIns/VoodooInput",    "x86_64", "", "", False),  # → Enabled=False
+    ("VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard",  "x86_64", "", "", False),
+    ("VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse",     "x86_64", "", "", False),
+    ("VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad",  "x86_64", "", "", False),
+    # ── Input: touchpad I2C (ELAN0708 en bus AMDI0010/I2CD) ─────────────────
+    # Plugins de VoodooI2C ANTES del bundle principal (requisito de carga de OpenCore)
+    ("VoodooI2C.kext/Contents/PlugIns/VoodooGPIO",        "x86_64", "", "", False),
+    ("VoodooI2C.kext/Contents/PlugIns/VoodooI2CServices", "x86_64", "", "", False),
+    ("VoodooI2C.kext/Contents/PlugIns/VoodooInput",       "x86_64", "", "", False),
+    # Bundle principal VoodooI2C + satélite HID
     ("VoodooI2C",      "x86_64", "",    "",     False),
     ("VoodooI2CHID",   "x86_64", "",    "",     False),
-    ("VoodooPS2Controller", "x86_64", "", "",   False),
+    # ── Resto ────────────────────────────────────────────────────────────────
     ("NVMeFix",        "x86_64", "",    "",     False),
     ("BrightnessKeys", "x86_64", "",    "",     False),
     ("RestrictEvents", "x86_64", "",    "",     False),
@@ -95,16 +106,16 @@ KEXTS = [
 USE_NRED_DP_DELAY = True
 # True → -NRedNoAccel: framebuffer-only sin Metal (aisla si el cuelgue está en
 # la aceleración gráfica vs el panel eDP). Prueba #3 según diagnóstico sess.11.
-USE_NRED_NO_ACCEL = False
+USE_NRED_NO_ACCEL = True
 _NRED_EXTRA = " -NRedDPDelay" if USE_NRED_DP_DELAY else ""
 _NRED_EXTRA += " -NRedNoAccel" if USE_NRED_NO_ACCEL else ""
-# voodooI2CPoling=1: fuerza polling en VoodooI2C (evita depender de GPIO AMD para
-# las interrupciones del touchpad ELAN0708). Necesario si VoodooGPIO no gestiona
-# el controlador GPIO de este Lucienne. El typo "Poling" (1 ele) es intencional
-# — así está en el código fuente de VoodooI2C.
-USE_I2C_POLLING = True
-_I2C_EXTRA = " voodooI2CPoling=1" if USE_I2C_POLLING else ""
-BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13" + _NRED_EXTRA + _I2C_EXTRA
+# Polling forzado de VoodooI2C: boot-arg real es "-vi2c-force-polling".
+# "voodooI2CPoling=1" NO existe en el binario de VoodooI2C v2.9.1 — era inefectivo.
+# Con los plugins declarados correctamente, VoodooI2C cae automáticamente a polling
+# si no encuentra interrupts GPIO válidas (el Otus9051 no usa este boot-arg y funciona).
+USE_I2C_POLLING = False
+_I2C_EXTRA = " -vi2c-force-polling" if USE_I2C_POLLING else ""
+BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 agdpmod=pikera" + _NRED_EXTRA + _I2C_EXTRA
 # Cpuid1Data VACÍO: en AMD los parches AMD_Vanilla ya fijan la familia de CPU.
 # Inyectar un Cpuid1Data spoofeado de Intel ENCIMA de esos parches provoca un
 # kernel panic tempranísimo (negro + reinicio sin verbose). El EFI de referencia
@@ -192,18 +203,28 @@ def load_amd_patches():
     return patches
 
 
-def kext_entry(name, arch, minkernel, maxkernel, noexec):
+def kext_entry(bundle_path, arch, minkernel, maxkernel, noexec):
+    # Soporta tanto kexts simples ("Lilu") como sub-plugins
+    # ("VoodooI2C.kext/Contents/PlugIns/VoodooGPIO").
+    # Para sub-plugins, el ejecutable es el último componente del path.
+    if "/" in bundle_path:
+        exec_name = bundle_path.split("/")[-1]
+        full_bundle = f"{bundle_path}.kext"
+    else:
+        exec_name = bundle_path
+        full_bundle = f"{bundle_path}.kext"
+
     entry = {
         "Arch": arch,
-        "BundlePath": f"{name}.kext",
-        "Comment": name,
+        "BundlePath": full_bundle,
+        "Comment": exec_name,
         "Enabled": True,
         "MaxKernel": maxkernel,
         "MinKernel": minkernel,
         "PlistPath": "Contents/Info.plist",
     }
     if not noexec:
-        entry["ExecutablePath"] = f"Contents/MacOS/{name}"
+        entry["ExecutablePath"] = f"Contents/MacOS/{exec_name}"
     else:
         entry["ExecutablePath"] = ""
     return entry
@@ -259,18 +280,31 @@ def build_config():
     template["ACPI"]["Add"] = [
         {"Comment": s, "Enabled": True, "Path": f"{s}.aml"} for s in ACPI_SSDTS
     ]
-    # Find/Replace de 5 bytes (incluye el 0x02 = nº de args del método GPRW) y
-    # esquema COMPLETO de ACPI>Patch (Base/BaseSkip/ReplaceMask son obligatorios;
-    # sin ellos ocvalidate falla "Missing key Base/BaseSkip/ReplaceMask").
-    template["ACPI"]["Patch"] = [{
-        "Base": "", "BaseSkip": 0,
-        "Comment": "change GPRW to XPRW",
-        "Count": 0, "Enabled": True, "Limit": 0,
-        "Find": bytes.fromhex("4750525702"), "Replace": bytes.fromhex("5850525702"),
-        "Mask": b"", "ReplaceMask": b"",
-        "OemTableId": b"", "Skip": 0,
-        "TableLength": 0, "TableSignature": b"",
-    }]
+    # Parche GPRW→XPRW: neutraliza instant-wake (5 bytes, incluye arg count 0x02).
+    # Parche _OSI→XOSI: requerido para que SSDT-XOSI funcione. Sin este rename,
+    # el DSDT llama al _OSI real de Apple (que no conoce "Darwin" como Windows)
+    # y el bus I2C AMDI0010 no se activa en macOS. El Otus9051 (5300U que arranca
+    # con touchpad) tiene este parche; sin él SSDT-XOSI es letra muerta.
+    template["ACPI"]["Patch"] = [
+        {
+            "Base": "", "BaseSkip": 0,
+            "Comment": "change GPRW to XPRW",
+            "Count": 0, "Enabled": True, "Limit": 0,
+            "Find": bytes.fromhex("4750525702"), "Replace": bytes.fromhex("5850525702"),
+            "Mask": b"", "ReplaceMask": b"",
+            "OemTableId": b"", "Skip": 0,
+            "TableLength": 0, "TableSignature": b"",
+        },
+        {
+            "Base": "", "BaseSkip": 0,
+            "Comment": "_OSI to XOSI rename (requiere SSDT-XOSI.aml)",
+            "Count": 0, "Enabled": True, "Limit": 0,
+            "Find": bytes.fromhex("5f4f5349"), "Replace": bytes.fromhex("584f5349"),
+            "Mask": b"", "ReplaceMask": b"",
+            "OemTableId": b"", "Skip": 0,
+            "TableLength": 0, "TableSignature": b"",
+        },
+    ]
 
     # Esquema de memoria "moderno" (sesión 11): Otus9051 (Ryzen 3 5300U exacto
     # que arranca Ventura) usa este esquema. El legacy se fijó en sesión 2 porque
@@ -321,12 +355,22 @@ def build_config():
         "DummyPowerManagement": True,
     })
 
-    # Deshabilitar AMD PM kexts mientras causen kernel panic (Caps Lock on).
-    # Causa diagnosticada: interacción con ForgedInvariant v1.2.0 (ya en v1.5.0) +
-    # quirks de memoria. Re-evaluar tras instalar con sistema estable.
-    AMD_PM_DISABLED = {"AMDRyzenCPUPowerManagement", "SMCAMDProcessor"}
+    # Kexts deshabilitados explícitamente:
+    # - AMD PM: kernel panic (Caps Lock on) en esta config de instalación
+    # - VoodooInput del PS2: duplicado — solo debe haber UNA instancia de VoodooInput
+    #   activa. La del I2C gestiona el touchpad ELAN0708; si carga la del PS2 también,
+    #   el IORegistry tiene dos motores multitouch y los eventos se corrompen.
+    KEXTS_DISABLED = {
+        "AMDRyzenCPUPowerManagement",
+        "SMCAMDProcessor",
+        "VoodooInput",  # el del PS2 (BundlePath contiene PlugIns de VoodooPS2Controller)
+    }
     for entry in template["Kernel"]["Add"]:
-        if entry["Comment"] in AMD_PM_DISABLED:
+        bp = entry.get("BundlePath", "")
+        comment = entry.get("Comment", "")
+        is_ps2_input = (comment == "VoodooInput" and "VoodooPS2Controller" in bp)
+        is_amd_pm = comment in ("AMDRyzenCPUPowerManagement", "SMCAMDProcessor")
+        if is_ps2_input or is_amd_pm:
             entry["Enabled"] = False
 
     template["Misc"]["Boot"].update({
