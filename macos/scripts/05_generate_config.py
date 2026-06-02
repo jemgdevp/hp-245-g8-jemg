@@ -12,6 +12,7 @@ import subprocess
 import uuid
 import random
 import shutil
+import argparse
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -29,6 +30,13 @@ SERIAL = "C02DH0E0PN6P"
 MLB = "C02038201LDPN6P1H"
 SMBIOS_MODEL = "iMac20,1"
 BOARD_ID = "Mac-CFF7D910A743CAAF"  # board-id oficial de iMac20,1 (receta Otus, 5300U)
+
+# Identidad FIJA del SMBIOS. Antes se regeneraban SystemUUID y ROM en CADA ejecución
+# (uuid4 + ROM aleatorio), lo que rompía la identidad de la "Mac" entre perfiles/regens
+# (iMessage/iCloud, NVRAM). Se fijan a los valores del config.plist que ya funciona en el
+# disco para que los 3 perfiles compartan identidad y no cambie en cada generación.
+SYSTEM_UUID = "7DE77C0C-70C3-4EC0-9457-E2753A502021"
+ROM_FIXED = bytes.fromhex("64cbd3b317f3")
 
 # Núcleos físicos del Ryzen 3 5300U (4C/8T). Se inyecta en los patches
 # AMD_Vanilla "cpuid_cores_per_package to constant"; dejarlo en 0 cuelga
@@ -126,7 +134,40 @@ _I2C_EXTRA = " -vi2c-force-polling" if USE_I2C_POLLING else ""
 # Laptop SOLO si el SMBIOS contiene "Book". Con iMac20,1 (sin "Book") NootedRed lo trata
 # como desktop y NO registra el backlight. AMDBacklight=1 fuerza el override sin cambiar
 # de SMBIOS. (Alternativa probada en Otus9051: SMBIOS MacBookPro16,2, que activa el flag solo.)
-BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 agdpmod=pikera revblock=media AMDBacklight=1" + _NRED_EXTRA + _I2C_EXTRA
+# boot-args COMUNES a todos los perfiles (lo que hace funcionar el hardware):
+#   npci=0x3000 alcid=13 agdpmod=pikera revblock=media AMDBacklight=1 -NRedDPDelay
+# El prefijo de DEBUG (-v keepsyms=1 debug=0x100) solo va en install/stable.
+_BASE_ARGS = "npci=0x3000 alcid=13 agdpmod=pikera revblock=media AMDBacklight=1" + _NRED_EXTRA + _I2C_EXTRA
+_DEBUG_ARGS = "-v keepsyms=1 debug=0x100"
+# BOOT_ARGS por defecto (perfil stable) — mantiene el comportamiento histórico.
+BOOT_ARGS = _DEBUG_ARGS + " " + _BASE_ARGS
+
+# ============================================================================
+# PERFILES DE EFI — un solo árbol de kexts/SSDTs, 3 config.plist intercambiables.
+#   install     : para el USB instalador (verbose+debug, USB provisional UTBDefault).
+#   stable      : = el EFI que arranca HOY (ancla de seguridad anti-regresión).
+#   postinstall : uso diario (sin verbose/debug, auto-arranque, ECEnabler + SSDT-RTCAWAC,
+#                 SetApfsTrimTimeout=0 para HDD; AMD PM sigue OFF por incompatibilidad).
+# Solo cambia lo listado aquí; todo lo demás (quirks, SMBIOS, parches AMD, input...)
+# es INVARIANTE de hardware y vive una sola vez en build_config().
+# ============================================================================
+PROFILES = {
+    "install": dict(
+        verbose=True,  target=67, apple_debug=True,  watchdog=True,  timeout=0,
+        apfs_trim=-1,  usb="utbdefault", extra_kexts=[], extra_ssdts=[],
+    ),
+    "stable": dict(
+        verbose=True,  target=67, apple_debug=True,  watchdog=True,  timeout=0,
+        apfs_trim=-1,  usb="utbdefault", extra_kexts=[], extra_ssdts=[],
+    ),
+    "postinstall": dict(
+        verbose=False, target=3,  apple_debug=False, watchdog=False, timeout=5,
+        apfs_trim=0,   usb="utbmap",
+        extra_kexts=[("ECEnabler", "x86_64", "", "", False)],
+        extra_ssdts=["SSDT-RTCAWAC"],
+    ),
+}
+
 # Cpuid1Data VACÍO: en AMD los parches AMD_Vanilla ya fijan la familia de CPU.
 # Inyectar un Cpuid1Data spoofeado de Intel ENCIMA de esos parches provoca un
 # kernel panic tempranísimo (negro + reinicio sin verbose). El EFI de referencia
@@ -241,9 +282,10 @@ def kext_entry(bundle_path, arch, minkernel, maxkernel, noexec):
     return entry
 
 
-def build_config():
+def build_config(profile="stable"):
+    cfg = PROFILES[profile]
     print("=" * 60)
-    print("  OpenCore config.plist — AMD Renoir + Sonoma")
+    print(f"  OpenCore config.plist — AMD Renoir — perfil: {profile}")
     print("=" * 60)
 
     clone_amd_vanilla()
@@ -251,9 +293,12 @@ def build_config():
     print(f"  Kernel patches loaded: {len(patches)}")
 
     template = plistlib.loads(TEMPLATE_PATH.read_bytes())
-    system_uuid = str(uuid.uuid4()).upper()
-    rom = generate_rom()
+    system_uuid = SYSTEM_UUID   # FIJO (no regenerar; ver SYSTEM_UUID arriba)
+    rom = ROM_FIXED             # FIJO
     rom_str = ":".join(f"{b:02x}" for b in rom)
+
+    # boot-args del perfil: el prefijo de debug (-v keepsyms debug=0x100) solo en verbose.
+    boot_args = (_DEBUG_ARGS + " " + _BASE_ARGS) if cfg["verbose"] else _BASE_ARGS
 
     print(f"  Serial:      {SERIAL}")
     print(f"  MLB:         {MLB}")
@@ -279,6 +324,14 @@ def build_config():
             "SSDT-ALS0", "SSDT-EC", "SSDT-GPRW", "SSDT-HPET", "SSDT-PLUG-ALT",
             "SSDT-PMC", "SSDT-PNLF", "SSDT-PS2K", "SSDT-USBX", "SSDT-XOSI", "SSDT-USB-Reset",
         ]
+
+    # SSDTs extra del perfil (p.ej. SSDT-RTCAWAC en postinstall, para sleep/RTC).
+    # Solo se añaden si el .aml existe en EFI/OC/ACPI/.
+    for extra in cfg["extra_ssdts"]:
+        if (EFI_OC / "ACPI" / f"{extra}.aml").exists() and extra not in ACPI_SSDTS:
+            ACPI_SSDTS.append(extra)
+        elif extra not in ACPI_SSDTS:
+            print(f"  [AVISO] {extra}.aml no existe en ACPI/ — perfil {profile} lo omite")
 
     # SSDTs del HP 245 G8. SSDT-PLUG-ALT (no SSDT-PLUG): la versión Intel de PLUG
     # busca objetos P001, P002... que no existen en AMD (solo P000); causa
@@ -339,9 +392,24 @@ def build_config():
         "SyncRuntimePermissions": True,
     })
 
+    # Lista de kexts efectiva según perfil.
+    kexts = list(KEXTS)
+    # Bloque USB: postinstall usa el mapa real UTBMap si existe; si no, mantiene
+    # UTBDefault (provisional) y avisa. install/stable usan siempre UTBDefault.
+    if cfg["usb"] == "utbmap":
+        if (EFI_OC / "Kexts" / "UTBMap.kext").exists():
+            kexts = [k for k in kexts if k[0] != "UTBDefault"]
+            kexts.append(("UTBMap", "Any", "", "", True))
+            print("  USB: UTBMap.kext (mapa real)")
+        else:
+            print("  [AVISO] perfil postinstall pide UTBMap.kext pero aún no existe;")
+            print("          se mantiene UTBDefault. Genera el mapping real en macOS (USBMap).")
+    # Kexts extra del perfil (p.ej. ECEnabler en postinstall)
+    kexts += cfg["extra_kexts"]
+
     template["Kernel"]["Add"] = [
         kext_entry(name, arch, mink, maxk, noex)
-        for name, arch, mink, maxk, noex in KEXTS
+        for name, arch, mink, maxk, noex in kexts
     ]
 
     template["Kernel"]["Patch"] = patches or []
@@ -358,15 +426,23 @@ def build_config():
         "PanicNoKextDump": True,
         "PowerTimeoutKernelPanic": True,
         "ProvideCurrentCpuInfo": True,  # AMD: MSR/CPUID correctos al kernel
-        "SetApfsTrimTimeout": -1,
+        # SetApfsTrimTimeout: -1 (default ~10s) en install/stable; 0 en postinstall
+        # porque macOS está en HDD mecánico (sin TRIM): evita penalizar el arranque
+        # intentando un TRIM que no aplica.
+        "SetApfsTrimTimeout": cfg["apfs_trim"],
         "XhciPortLimit": False,
     })
 
     template["Kernel"]["Emulate"].update({
         "Cpuid1Data": CPUID1_DATA,
         "Cpuid1Mask": CPUID1_MASK,
-        # True: AMDRyzenCPUPowerManagement v0.7.2 + SMCAMDProcessor provocan kernel panic
-        # (Caps Lock on) en esta config durante la instalación. Re-evaluar tras instalar.
+        # DummyPowerManagement=True en TODOS los perfiles. AMDRyzenCPUPowerManagement +
+        # SMCAMDProcessor se quedan OFF (no re-activar): el panic no es de versión sino
+        # estructural — esos kexts escriben P-states legacy por MSR y NO implementan CPPC,
+        # que es justo lo que las APU Lucienne móviles usan para escalar; sin CPPC los
+        # P-states cuelgan/paniquean (Caps Lock). El propio dev de NootedRed recomienda
+        # quitarlos en APUs; el SMU del firmware ya gobierna frecuencia/voltaje. Para ver
+        # temperaturas se puede usar SMCProcessorAMD (monitor, no toca PM) — opcional.
         "DummyPowerManagement": True,
     })
 
@@ -403,18 +479,21 @@ def build_config():
         "PickerAttributes": 17,
         "PickerMode": "Builtin",
         "ShowPicker": True,
-        # 0: muestra el picker y espera selección sin auto-arrancar (evita que
-        # se vaya solo a Linux). Subir a 5 tras terminar la instalación.
-        "Timeout": 0,
+        # Timeout por perfil: 0 (install/stable) muestra el picker y espera selección
+        # sin auto-arrancar (evita irse solo a Linux); 5 (postinstall) auto-arranca a macOS.
+        "Timeout": cfg["timeout"],
         "PollAppleHotKeys": False,
     })
 
+    # Misc>Debug por perfil: install/stable escriben logs en la ESP (Target=67) para
+    # diagnóstico; postinstall usa Target=3 (sin opencore-*.txt en disco) + sin watchdog.
+    # ApplePanic se deja True (barato y útil para post-mortem de kernel panics).
     template["Misc"]["Debug"].update({
-        "AppleDebug": True,
+        "AppleDebug": cfg["apple_debug"],
         "ApplePanic": True,
-        "DisableWatchDog": True,
+        "DisableWatchDog": cfg["watchdog"],
         "DisplayLevel": DISPLAY_ALL,
-        "Target": LOG_SERIAL_FILE,
+        "Target": cfg["target"],
     })
 
     template["Misc"]["Security"].update({
@@ -450,7 +529,7 @@ def build_config():
 
     nv_guid = "7C436110-AB2A-4BBB-A880-FE41995C9F82"
     template["NVRAM"]["Add"][nv_guid] = {
-        "boot-args": BOOT_ARGS,
+        "boot-args": boot_args,
         "csr-active-config": CSR_ACTIVE,
         "prev-lang:kbd": "en-US:0",
         "run-efi-updater": "No",
@@ -569,9 +648,19 @@ def build_config():
     shutil.copy2(TEMPLATE_PATH, backup)
     print(f"  Backup: {backup}")
 
+    plist_bytes = plistlib.dumps(template)
+
+    # 1) Copia versionada del perfil en EFI/OC/profiles/config-<profile>.plist
+    profiles_dir = EFI_OC / "profiles"
+    profiles_dir.mkdir(exist_ok=True)
+    profile_out = profiles_dir / f"config-{profile}.plist"
+    profile_out.write_bytes(plist_bytes)
+    print(f"  Perfil:  {profile_out}")
+
+    # 2) config.plist ACTIVO (el que sincroniza 06_sync_usb_efi.sh)
     output = EFI_OC / "config.plist"
-    output.write_text(plistlib.dumps(template).decode())
-    print(f"  Written: {output}")
+    output.write_bytes(plist_bytes)
+    print(f"  Activo:  {output}  (perfil {profile})")
 
     print()
     print("=" * 60)
@@ -582,20 +671,39 @@ def build_config():
     print(f"  MLB:         {MLB}")
     print(f"  UUID:        {system_uuid}")
     print(f"  ROM:         {rom_str}")
+    print(f"  Perfil:      {profile}")
     print(f"  Patches:     {len(patches)}")
-    print(f"  Kexts:       {len(KEXTS)}")
-    print(f"  Boot args:   {BOOT_ARGS}")
-    print(f"  -NRedDPDelay:  {USE_NRED_DP_DELAY}")
-    print(f"  -NRedNoAccel:  {USE_NRED_NO_ACCEL}")
-    print(f"  ACPI minimal test: {USE_MINIMAL_ACPI_FOR_FB_TEST}")
+    print(f"  Kexts:       {len(kexts)}")
+    print(f"  SSDTs:       {len(ACPI_SSDTS)}")
+    print(f"  Boot args:   {boot_args}")
+    print(f"  Debug Target: {cfg['target']}  Timeout: {cfg['timeout']}  ApfsTrim: {cfg['apfs_trim']}")
     print()
     print("  NEXT:")
-    print("    Copy EFI/ to USB and boot.")
-    print(f"    ocvalidate at: {TOOLS}/OpenCorePkg/Utilities/ocvalidate/")
-    print("  NootedRed va ACTIVADO desde la instalación (Renoir no tiene")
-    print("    framebuffer básico; sin él la pantalla queda negra).")
+    if profile == "install":
+        print("    Sincroniza al USB:  ./scripts/06_sync_usb_efi.sh")
+    elif profile == "postinstall":
+        print("    Copia EFI/OC/config.plist al ESP del disco interno (MountEFI) + Reset NVRAM.")
+    else:
+        print("    Sincroniza con ./scripts/06_sync_usb_efi.sh o copia al disco.")
+    print(f"    ocvalidate: {TOOLS}/ocvalidate ./EFI/OC/config.plist")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(build_config())
+    parser = argparse.ArgumentParser(
+        description="Genera config.plist de OpenCore por perfil (install/stable/postinstall)."
+    )
+    parser.add_argument(
+        "--profile", choices=list(PROFILES.keys()), default="stable",
+        help="Perfil de EFI a generar (default: stable = el EFI que arranca hoy).",
+    )
+    parser.add_argument(
+        "--all", action="store_true",
+        help="Genera los 3 perfiles en EFI/OC/profiles/ y deja 'stable' como config.plist activo.",
+    )
+    args = parser.parse_args()
+    if args.all:
+        for p in ("install", "postinstall", "stable"):  # stable al final → queda activo
+            build_config(p)
+        sys.exit(0)
+    sys.exit(build_config(args.profile))
