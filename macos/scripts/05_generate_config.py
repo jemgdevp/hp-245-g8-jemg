@@ -106,7 +106,10 @@ KEXTS = [
 USE_NRED_DP_DELAY = True
 # True → -NRedNoAccel: framebuffer-only sin Metal (aisla si el cuelgue está en
 # la aceleración gráfica vs el panel eDP). Prueba #3 según diagnóstico sess.11.
-USE_NRED_NO_ACCEL = True
+# -NRedNoAccel: probado, NO resolvió el freeze de la fase final. Ni Otus9051 ni
+# beitanam (Lenovo V15, mismo CPU, funcionales) lo usan. Apagado para no dejar el
+# iGPU en estado a medias. -NRedDPDelay SÍ se mantiene (beitanam lo usa con panel eDP).
+USE_NRED_NO_ACCEL = False
 _NRED_EXTRA = " -NRedDPDelay" if USE_NRED_DP_DELAY else ""
 _NRED_EXTRA += " -NRedNoAccel" if USE_NRED_NO_ACCEL else ""
 # Polling forzado de VoodooI2C: boot-arg real es "-vi2c-force-polling".
@@ -311,15 +314,16 @@ def build_config():
     # la EFI de referencia HP 245 G8 (5500U) lo usaba y el moderno colgaba tras
     # ExitBootServices — pero eso fue antes de alinear SMBIOS, power-kexts y
     # ACPI. Grok + issue #206 confirman que Otus9051 (idéntico CPU) usa moderno.
-    # DevirtualiseMmio=True + ProtectUefiServices=True: corrección del mapa MMIO
-    # del iGPU recomendada por AMD-OSX para Renoir/Lucienne con NootedRed.
-    # Si esto cuelga tras ExitBootServices → revertir a legacy (sesión 2 fix).
+    # DevirtualiseMmio + ProtectUefiServices = False: ALINEADO con Otus9051
+    # (config real del mismo CPU 5300U que arranca; verificado tiene ambos False).
+    # En True el instalador se congela en su fase final (sellado APFS / I/O tardía):
+    # un fault de mapeo MMIO bajo carga sostenida cuelga el kernel sin verbose.
     template["Booter"]["Quirks"].update({
         "AvoidRuntimeDefrag": True,
-        "DevirtualiseMmio": True,
+        "DevirtualiseMmio": False,
         "EnableSafeModeSlide": True,
         "EnableWriteUnprotector": False,
-        "ProtectUefiServices": True,
+        "ProtectUefiServices": False,
         "ProvideCustomSlide": True,
         "RebuildAppleMemoryMap": True,
         "ResizeAppleGpuBars": -1,
@@ -337,9 +341,12 @@ def build_config():
     template["Kernel"]["Quirks"].update({
         "AppleXcpmCfgLock": False,   # Intel-only; innecesario en AMD
         "CustomSMBIOSGuid": False,
-        "DisableIoMapper": True,    # receta Otus9051 (EFI del 5300U que arranca)
+        "DisableIoMapper": False,   # Otus9051 REAL lo tiene False (el comentario
+                                    # previo "True=receta Otus" era erróneo): VT-d/IOMMU
+                                    # activo no estorba y el False alinea con la ref que arranca.
         "DisableLinkeditJettison": True,
-        "LapicKernelPanic": True,   # AMD: evita panic por LAPIC; la ref lo usa
+        "LapicKernelPanic": False,  # Otus9051 lo tiene False; True añadía panic-paths
+                                    # innecesarios. Alineado con la ref funcional.
         "PanicNoKextDump": True,
         "PowerTimeoutKernelPanic": True,
         "ProvideCurrentCpuInfo": True,  # AMD: MSR/CPUID correctos al kernel
