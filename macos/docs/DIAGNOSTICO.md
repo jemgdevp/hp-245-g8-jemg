@@ -563,3 +563,47 @@ interno (MountEFI desde macOS, o montando `sda1` desde Arch).
   EFI/instalación de Ventura como fallback. NootedRed 0.8.10 (ya lo tenemos) sirve hasta macOS 26;
   OpenCore último 1.0.x; AMD_Vanilla actualizado (solo Sequoia: activar su parche PAT y desactivar el previo).
 
+## Verificación post-install 2026-06-02 — iGPU ACELERADA + causa raíz del brillo
+
+**iGPU CONFIRMADA con aceleración completa** (en el sistema instalado):
+```
+system_profiler SPDisplaysDataType:
+  AMD Radeon RX Renoir Graphics
+  VRAM (Total): 2 GB
+  Metal Support: Metal 3
+```
+→ El UMA Frame Buffer YA está en 2 GB (la BIOS está bien, NO hace falta Smokeless_UMAF) y Metal 3
+funciona. **No falta nada de aceleración gráfica.** Los comandos que "fallaron" del usuario eran
+typos (`PerfromanceStatistics`, `NooteRed`). En macOS reciente `kextstat` está deprecado; usar
+`kmutil showloaded | grep -i NootedRed`.
+
+**Único pendiente real = control de brillo (slider ausente). CAUSA RAÍZ confirmada en código fuente
+de NootedRed** (`Backlight.cpp:87-91`): NootedRed solo instala el subsistema de backlight si
+`modelType == ComputerLaptop`, y Lilu (`kern_devinfo.cpp`) marca Laptop SOLO si el identificador
+SMBIOS contiene la cadena **"Book"**. Con **`iMac20,1`** (sin "Book") → NootedRed lo trata como
+desktop y hace `return` sin registrar el backlight. Por eso no hay slider pese a que la GPU acelera.
+
+- **Fix aplicado (opción A, mínima y reversible):** `AMDBacklight=1` en boot-args — override exacto
+  del propio código (`PE_parse_boot_argn("AMDBacklight", ...)`), mantiene iMac20,1 y el UUID estable.
+- **Alternativa B (probada en Otus9051, mismo CPU):** SMBIOS **MacBookPro16,2** activa el flag laptop
+  solo, sin AMDBacklight ni -NRedDPDelay (pero regenera SystemUUID/ROM/serial).
+- **SSDT-PNLF: el nuestro es el correcto** (idéntico al de Otus9051: OEM VISUAL/AMDPNLF, `_HID APP0002`,
+  `_CID backlight`). En Renoir NootedRed controla el brillo por software (`dc_link_set_backlight_level`),
+  no necesita `_BCM`/`_BCL` ni PWMMax.
+- **Issue #302** (Renoir, brillo) está CERRADO/resuelto con SSDT-ALS0 (que ya tenemos). El soporte de
+  brillo en Renoir está implementado, no es limitación abierta.
+
+**Consejos externos (Google IA) que NO aplican a este equipo:** quitar WhateverGreen (no lo tenemos),
+limpiar DeviceProperties del iGPU (ya vacío), añadir SSDT-PNLF/BrightnessKeys/SMCLightSensor (ya están).
+Toda la parte de "Intel + Lilu + WhateverGreen + OCLP" es de hackintosh Intel — irrelevante para AMD/NootedRed.
+
+**Limpiezas opcionales detectadas (no urgentes, probar por separado):** `agdpmod=pikera` es redundante
+(NootedRed ya parchea AGDP internamente, `Hotfixes/AGDP.cpp`); `-NRedDPDelay` no lo usa la referencia
+del mismo CPU (es para black-screen por link-training, no para brillo) — si el panel enciende bien, se
+puede probar a quitarlo.
+
+### Boot-args reales de NootedRed (confirmados en código fuente, v0.8.10)
+`-NRedOff`, `-NRedDebug`, `-NRedBeta`, `-NRedNoAccel`, `-NRedDPDelay`, `-NRedDelayPanic`,
+`-NRedDebugUltra`, `-NRedCursorDebug`, y `AMDBacklight=<bool>`. `revblock`/`revpatch` NO son de
+NootedRed (son de RestrictEvents).
+

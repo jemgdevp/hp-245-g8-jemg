@@ -121,7 +121,12 @@ _I2C_EXTRA = " -vi2c-force-polling" if USE_I2C_POLLING else ""
 # revblock=media: arg de RestrictEvents (ya en KEXTS). Bloquea mediaanalysisd en
 # Ventura+ con GPUs Metal-1 como la Vega 6/NootedRed — recomendado por ChefKiss para
 # estabilidad/aspecto del iGPU. Inocuo si el problema real es el UMA Frame Buffer (BIOS).
-BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 agdpmod=pikera revblock=media" + _NRED_EXTRA + _I2C_EXTRA
+# AMDBacklight=1: ACTIVA el slider de brillo. Confirmado en el código de NootedRed
+# (Backlight.cpp:87-91): solo instala el backlight si modelType==Laptop, y Lilu marca
+# Laptop SOLO si el SMBIOS contiene "Book". Con iMac20,1 (sin "Book") NootedRed lo trata
+# como desktop y NO registra el backlight. AMDBacklight=1 fuerza el override sin cambiar
+# de SMBIOS. (Alternativa probada en Otus9051: SMBIOS MacBookPro16,2, que activa el flag solo.)
+BOOT_ARGS = "-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 agdpmod=pikera revblock=media AMDBacklight=1" + _NRED_EXTRA + _I2C_EXTRA
 # Cpuid1Data VACÍO: en AMD los parches AMD_Vanilla ya fijan la familia de CPU.
 # Inyectar un Cpuid1Data spoofeado de Intel ENCIMA de esos parches provoca un
 # kernel panic tempranísimo (negro + reinicio sin verbose). El EFI de referencia
