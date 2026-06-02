@@ -607,3 +607,19 @@ puede probar a quitarlo.
 `-NRedDebugUltra`, `-NRedCursorDebug`, y `AMDBacklight=<bool>`. `revblock`/`revpatch` NO son de
 NootedRed (son de RestrictEvents).
 
+## RESULTADO 2026-06-02 — sistema FUNCIONAL ✅
+
+Tras aplicar `AMDBacklight=1` al EFI del disco interno (vía MountEFI) + Reset NVRAM, el usuario
+confirma en macOS Ventura:
+- ✅ **Brillo**: el slider funciona (causa raíz era el SMBIOS sin "Book"; `AMDBacklight=1` lo resolvió).
+- ✅ **Audio**: funciona (ALC236, `alcid=13`).
+- ✅ **Batería**: lectura correcta (SMCBatteryManager).
+- ✅ **iGPU**: acelerada (2 GB VRAM, Metal 3) — ya confirmado antes.
+- ✅ **Teclado/touchpad** internos, arranque sin USB.
+
+**boot-args finales (en uso):** `-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 agdpmod=pikera
+revblock=media AMDBacklight=1 -NRedDPDelay`. SMBIOS `iMac20,1`. AMD PM kexts OFF + DummyPM=True.
+
+**Pendientes (no bloqueantes):** WiFi RTL8822CE (no soportado → dongle USB), USB mapping real con
+USBToolBox, limpiar `-v debug=0x100 keepsyms=1` para uso diario. **Versión: se queda en Ventura.**
+

@@ -21,33 +21,47 @@
 - VRAM subida a **2 GB** en BIOS (crítico para NootedRed).
 - No tiene Above 4G Decoding fácil → usamos `npci=0x3000`.
 
-## Estado actual — macOS Ventura INSTALADO y arrancando sin USB (2026-06-02)
+## Estado actual — macOS Ventura FUNCIONAL (2026-06-02)
 
-**HITO ALCANZADO**: macOS Ventura 13 instalado en el HDD interno (`sda2`, APFS) y arrancando
-desde el EFI del disco interno (`sda1`) **sin la USB**. Dual boot con Arch Linux (NVMe) intacto.
+**HITO ALCANZADO**: macOS Ventura 13 instalado en el HDD interno (`sda2`, APFS), arrancando
+desde el EFI del disco interno (`sda1`) **sin la USB**, con lo esencial funcionando. Dual boot
+con Arch Linux (NVMe) intacto.
 
-- Secuencia confirmada: instalador → copia/extracción → reinicios → primer boot desde disco → escritorio.
-- **Teclado interno y touchpad funcionan** (fix de sub-plugins PS2/I2C + parche `_OSI→XOSI`).
-- **NootedRed activo** — pendiente verificar aceleración iGPU completa (Metal/VRAM) en post-install.
-- Lo que faltó durante la instalación: añadir `-NRedNoAccel` manualmente en el picker (solo para
-  esa sesión, no va en el config) para pasar el muro del framebuffer en la fase de copia.
-- Lo que destrabó la instalación: **USB reconstruido limpio** (sin firma iso9660 residual) +
-  quirks alineados con Otus9051 + `agdpmod=pikera`. Ver `macos/docs/DIAGNOSTICO.md`.
-- Generador (`05_generate_config.py`) es la fuente de verdad del `config.plist`.
+**Funciona:**
+- ✅ **iGPU acelerada**: AMD Radeon RX Renoir Graphics, **VRAM 2 GB, Metal 3** (NootedRed v0.8.10).
+- ✅ **Brillo** del panel interno (slider + teclas) — vía `AMDBacklight=1` (ver nota abajo).
+- ✅ **Audio** (ALC236, `alcid=13`).
+- ✅ **Batería** (lectura correcta de carga/estado, SMCBatteryManager).
+- ✅ **Teclado y touchpad** internos (sub-plugins PS2/I2C + parche `_OSI→XOSI`).
+- ✅ Arranque desde disco interno sin USB.
+
+**Pendiente / limitaciones conocidas:**
+- ⚠️ **WiFi RTL8822CE** no soportado en macOS → usar dongle USB. Ver `macos/docs/wifi_rtl8822ce.md`.
+- ⚠️ **USB mapping** real (reemplazar `UTBDefault` por mapa propio con USBToolBox).
+- ⚠️ Limitaciones permanentes de NootedRed: sin decodificación HW de vídeo (VCN/DRM), sin audio HDMI, sleep/wake no fiable.
+- 🔧 Limpieza opcional: quitar `-v debug=0x100 keepsyms=1` de boot-args para uso diario.
+
+> **El slider de brillo y NootedRed:** NootedRed solo activa el backlight si Lilu detecta "laptop",
+> y Lilu lo decide buscando "Book" en el SMBIOS. Con `iMac20,1` (sin "Book") el backlight queda
+> desactivado pese a acelerar bien. Fix: `AMDBacklight=1` en boot-args (override del propio kext).
+
+> **Decisión de versión:** quedarse en **Ventura**. Sonoma es lateral (crashes propios de NootedRed)
+> y Sequoia es experimental; nada de lo que falta mejora al subir. Ver `macos/docs/DIAGNOSTICO.md`.
 
 ### Config que funciona (estado actual del EFI)
 
 | Parametro | Valor |
 |---|---|
 | macOS | Ventura 13 — instalado en `sda2` (APFS) |
-| NootedRed | v0.8.10 — HABILITADO |
+| iGPU | NootedRed v0.8.10 — acelerada (2 GB VRAM, Metal 3) |
+| Brillo | `AMDBacklight=1` (NootedRed trata iMac20,1 como desktop sin este arg) |
 | AMDRyzenCPUPowerManagement | DESHABILITADO (causa kernel panic) |
 | SMCAMDProcessor | DESHABILITADO (depende del anterior) |
 | DummyPowerManagement | True |
 | TSC sync | ForgedInvariant v1.5.0 |
 | SSDT CPU | SSDT-PLUG-ALT.aml (version AMD) |
 | Booter/Kernel quirks | `DevirtualiseMmio`/`ProtectUefiServices`/`DisableIoMapper`/`LapicKernelPanic` = False (alineado Otus9051) |
-| boot-args | `-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 agdpmod=pikera -NRedDPDelay` |
+| boot-args | `-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 agdpmod=pikera revblock=media AMDBacklight=1 -NRedDPDelay` |
 | SMBIOS | iMac20,1 |
 
 ## USB instalador — qué lleva y cómo recrearlo desde cero

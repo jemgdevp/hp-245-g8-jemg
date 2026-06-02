@@ -21,16 +21,15 @@ description: "Especialista en EFI OpenCore para HP 245 G8 (Ryzen 3 5300U, Lucien
 | OpenCore | 1.0.7 |
 | macOS objetivo | Ventura 13 |
 
-## Estado actual (2026-06-02)
+## Estado actual (2026-06-02) — FUNCIONAL
 
-- **macOS Ventura 13 INSTALADO** en HDD (`sda2`, APFS) y arrancando desde el EFI del disco
-  interno (`sda1`) **sin USB**. Dual boot con Arch Linux (NVMe) intacto. ✓
-- **Teclado y touchpad internos funcionan** (sub-plugins PS2/I2C + parche `_OSI→XOSI`). ✓
-- **NootedRed ON** — pendiente verificar aceleración iGPU completa (Metal/VRAM) en post-install.
-- Para pasar la instalación se añadió `-NRedNoAccel` **manual en el picker** (solo esa sesión).
+- **macOS Ventura 13 INSTALADO** en HDD (`sda2`, APFS), arranca del disco interno **sin USB**. ✓
+- **iGPU acelerada**: 2 GB VRAM, Metal 3 (NootedRed v0.8.10). ✓
+- **Brillo** ✓ (vía `AMDBacklight=1`: NootedRed trata iMac20,1 como desktop sin ese arg).
+- **Audio** (alcid=13) ✓ · **Batería** ✓ · **Teclado/touchpad** internos ✓.
 - Copiar el EFI al disco interno: usar **MountEFI** (chris1111), NO `cp EFI sobre sí misma`.
-- **Pendiente post-install:** aceleración iGPU, audio layout, USB mapping (USBToolBox), power
-  management AMD (reevaluar), y decidir Sonoma/Sequoia.
+- **Versión: quedarse en Ventura** (Sonoma lateral, Sequoia experimental).
+- **Pendiente:** WiFi (dongle USB, no soportado), USB mapping real (USBToolBox), limpiar `-v debug`.
 
 ## Gotchas confirmados (NO cambiar sin leer)
 

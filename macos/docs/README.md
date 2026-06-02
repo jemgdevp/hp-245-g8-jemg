@@ -1,79 +1,89 @@
-# Hackintosh EFI — Ryzen 3 5300U (Renoir)
+# Hackintosh EFI — HP 245 G8 (Ryzen 3 5300U / Renoir) + NootedRed
 
-## Hardware detectado
+> Documentación de la carpeta `macos/`. El README principal del proyecto está en la **raíz** del repo.
+> Estado: **macOS Ventura 13 instalado y funcional** (iGPU acelerada, brillo, audio, batería, sin USB).
 
-| Componente   | Detalle                                    |
-|-------------|--------------------------------------------|
-| CPU         | AMD Ryzen 3 5300U (4C/8T, Zen 2, Lucienne/Renoir) |
-| WiFi        | Realtek RTL8822CE `[10ec:c822]`            |
-| Arquitectura| x86_64                                     |
-| Host OS     | Arch Linux (Omarchy)                       |
+## Hardware
 
-## SMBIOS objetivo
+| Componente   | Detalle                                             |
+|-------------|------------------------------------------------------|
+| CPU         | AMD Ryzen 3 5300U (4C/8T, Zen 2, Lucienne/Renoir)    |
+| iGPU        | AMD Vega 6 `[1002:164c]` — NootedRed (acelerada, Metal 3) |
+| Audio       | Realtek ALC236 (`alcid=13`)                          |
+| WiFi        | Realtek RTL8822CE `[10ec:c822]` — **no soportado en macOS** |
+| Almacenam.  | HDD WDC 500 GB (macOS) + NVMe Kingston (Arch Linux)  |
+| Host OS     | Arch Linux (Omarchy)                                 |
 
-- **Modelo**: MacBookPro16,3
-- **macOS**: 14 Sonoma (Mac-937A206F2EE63C01)
+## SMBIOS y macOS
+
+- **SMBIOS**: `iMac20,1` (recomendado por ChefKiss para NootedRed en Renoir/Lucienne).
+- **macOS**: Ventura 13 (instalado). Decisión: **quedarse en Ventura** — Sonoma es lateral
+  (crashes propios de NootedRed) y Sequoia experimental; nada de lo que falta mejora al subir.
 
 ## Estructura del proyecto
 
 ```
-Dev/macos/
-├── run.sh                    ← Script principal (menú interactivo)
+macos/
 ├── scripts/
-│   ├── 01_install_ocat.sh    ← Instalar OCAT + dependencias
-│   ├── 02_download_recovery.sh← Descargar macOS Sonoma Recovery
-│   ├── 03_download_kexts.sh  ← Descargar los kexts necesarios
-│   └── 04_generate_config.sh ← Guía interactiva OCAT paso a paso
-├── kexts/                    ← Kexts descargados
-├── recovery/                 ← Archivos BaseSystem.dmg + .chunklist
-├── EFI/                      ← EFI generada por OCAT (después del paso 4)
-├── docs/                     ← Documentación y notas
-└── tools/                    ← OpenCorePkg (clonado por script 02)
+│   ├── 01_install_ocat.sh      ← Instalar OCAT + dependencias (uso único)
+│   ├── 02_download_recovery.sh ← Descargar macOS Recovery (Ventura)
+│   ├── 03_download_kexts.sh    ← Descargar kexts a kexts/
+│   ├── 04_generate_config.sh   ← Guía OCAT legacy (OBSOLETO)
+│   ├── 05_generate_config.py   ← FUENTE DE VERDAD del config.plist
+│   ├── 06_sync_usb_efi.sh      ← Sincroniza EFI/ al USB (sin sudo, udisksctl)
+│   └── 07_rebuild_usb.sh       ← Reconstruye el USB desde cero (wipefs + GPT + FAT32 + EFI)
+├── EFI/                        ← El "producto": EFI de OpenCore que va al USB / disco interno
+├── acpi_src/                   ← Fuentes .dsl de los SSDTs (compilar con iasl → .aml)
+├── recovery_ventura/           ← BaseSystem.dmg + chunklist del Recovery
+├── tools/                      ← ocvalidate, OpenCorePkg, AMD_Vanilla
+└── docs/                       ← Esta doc, DIAGNOSTICO.md (bitácora), DSDT, EFIs de referencia
 ```
 
-## Uso rápido
+## Flujo de trabajo (editar → generar → validar → sincronizar)
 
 ```bash
-# Ejecutar todo en orden automático
-bash run.sh
-# Elegir opción 5
-
-# O paso a paso:
-bash scripts/01_install_ocat.sh
-bash scripts/02_download_recovery.sh
-bash scripts/03_download_kexts.sh
-bash scripts/04_generate_config.sh
+cd macos
+# 1. Editar toggles/valores en el generador (fuente de verdad)
+nano scripts/05_generate_config.py
+# 2. Regenerar config.plist (hace backup automático)
+python3 scripts/05_generate_config.py
+# 3. Validar SIEMPRE antes de sincronizar
+./tools/ocvalidate ./EFI/OC/config.plist     # debe decir "No issues found"
+# 4. Sincronizar al USB (label MACOS)
+./scripts/06_sync_usb_efi.sh
 ```
 
-## Kexts incluidos
+Para reconstruir el USB desde cero (otro pendrive o uno corrupto): `sudo ./scripts/07_rebuild_usb.sh /dev/sdX`.
+Para copiar el EFI al disco interno desde macOS: usar **MountEFI** (chris1111). Ver README de la raíz.
 
-| Kext              | Función                          |
-|-------------------|----------------------------------|
-| Lilu.kext          | Base para todos los kexts       |
-| VirtualSMC.kext    | Emula SMC de Apple              |
-| NootedRed.kext     | Gráficos AMD (Cézanne/Renoir)  |
-| AppleALC.kext      | Audio HD                        |
-| USBToolBox.kext    | Mapeo de puertos USB            |
-| VoodooPS2Controller | Teclado + Trackpad              |
-| SMCBatteryManager  | Estado de batería               |
-| NVMeFix.kext       | Optimización NVMe               |
-| BrightnessKeys.kext| Teclas de brillo                |
-| AMDTscSync.kext    | Sincronización TSC (AMD CPU)    |
-| RestrictEvents.kext| Bloqueo de procesos no soportados|
+## Kexts principales (estado actual)
 
-## Ajustes de BIOS/UEFI requeridos
-
-- Disable Secure Boot
-- Disable Fast Boot
-- Enable Above 4G Decoding
-- Set UEFI boot mode
-- Disable CSM (Compatibility Support Module)
+| Kext                       | Estado | Función                                  |
+|----------------------------|--------|------------------------------------------|
+| Lilu                       | ON     | Base de todos los kexts                  |
+| VirtualSMC                 | ON     | Emula el SMC de Apple                    |
+| ForgedInvariant v1.5.0     | ON     | Sincronización TSC (AMD) — NO AmdTscSync |
+| NootedRed v0.8.10          | ON     | iGPU Vega 6 (acelerada, Metal 3)         |
+| AppleALC                   | ON     | Audio ALC236 (`alcid=13`)                |
+| RestrictEvents             | ON     | SMBIOS iMac20,1 + `revblock=media`       |
+| NVMeFix                    | ON     | Optimización NVMe                        |
+| VoodooPS2Controller (+plugins) | ON | Teclado interno                          |
+| VoodooI2C (+plugins) / VoodooI2CHID | ON | Touchpad ELAN (I2C)                  |
+| USBToolBox + UTBDefault    | ON     | Mapeo USB (UTBDefault es provisional)    |
+| SMCBatteryManager          | ON     | Estado de batería                        |
+| BrightnessKeys / SMCLightSensor | ON | Teclas y slider de brillo               |
+| AppleMCEReporterDisabler   | ON     | Evita panic AMD (codeless)               |
+| **AMDRyzenCPUPowerManagement** | **OFF** | Causa kernel panic en esta config    |
+| **SMCAMDProcessor**        | **OFF** | Depende del anterior                     |
 
 ## Notas importantes
 
-- **NootedRed** reemplaza a WhateverGreen. NO usar ambas.
-- Durante la **instalación** de macOS, dejar `NootedRed.kext` con `Enabled=False` en `config.plist` (framebuffer básico); activarlo tras instalar (Fase 2).
-- **AppleMCEReporterDisabler.kext** (codeless) recomendado en AMD ≥ macOS 12.3.
-- El WiFi RTL8822CE no funciona en macOS. Ver `docs/wifi_rtl8822ce.md`
-- El archivo `config.plist` se genera con OCAT (paso 4).
-  No lo edites manualmente a menos que sepas lo que haces.
+- **NootedRed reemplaza a WhateverGreen** — NO usar ambos (este EFI NO lleva WhateverGreen).
+- **NootedRed va HABILITADO desde la instalación** (Renoir no tiene framebuffer básico sin él).
+  Durante la fase de copia se puede añadir `-NRedNoAccel` *manual en el picker* si la pantalla
+  se congela; NO va en el config.
+- **Brillo**: requiere `AMDBacklight=1` en boot-args porque con SMBIOS `iMac20,1` (sin "Book")
+  NootedRed trata el equipo como desktop y no registra el backlight.
+- **`config.plist` se genera con `05_generate_config.py`** — no lo edites a mano; edita el generador.
+- **WiFi RTL8822CE** no funciona en macOS. Ver `wifi_rtl8822ce.md`.
+- Bitácora completa de diagnóstico y decisiones: `DIAGNOSTICO.md`.
