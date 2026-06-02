@@ -114,44 +114,62 @@ USB: FAT32, GPT, etiqueta MACOS (~7.5 GB con LED de actividad)
 Si necesitas formatear otro USB (o el actual está corrupto):
 
 ```bash
-# 1. Identificar el dispositivo (busca tu USB por tamaño/etiqueta)
-lsblk -o NAME,LABEL,FSTYPE,SIZE
+# 1. Identificar el dispositivo (busca tu USB por tamaño/etiqueta/modelo)
+lsblk -o NAME,SIZE,TYPE,FSTYPE,LABEL,MOUNTPOINT,MODEL
+# Confirma que /dev/sdX es el USB (modelo "UDisk", ~8GB), NO el HDD (WDC) ni el NVMe (KINGSTON).
 
 # 2. Desmontar si está montado
 udisksctl unmount -b /dev/sdX1 2>/dev/null; true
 
-# 3. SUDO — crear tabla GPT + partición FAT32 (¡borra todo!)
+# 3. SUDO — LIMPIAR firmas residuales (¡crítico!). Un USB que antes fue de Debian/otra
+#    distro deja una firma iso9660 híbrida que confunde al firmware HP. wipefs la borra.
+sudo wipefs -a /dev/sdX
+
+# 4. SUDO — crear tabla GPT + partición FAT32 (¡borra todo!)
 sudo parted /dev/sdX --script mklabel gpt mkpart primary fat32 1MiB 100%
+sudo partprobe /dev/sdX; sleep 2
 sudo mkfs.vfat -F 32 -n MACOS /dev/sdX1
 
-# 4. Montar (sin sudo)
+# 5. Montar (sin sudo)
 udisksctl mount -b /dev/sdX1
 
-# 5. Copiar recovery + EFI (desde la raíz del repo, sin sudo)
+# 6. Copiar recovery + EFI (desde la raíz del repo, sin sudo)
+#    IMPORTANTE: usar cp, NO `rsync -a` — FAT32 no soporta chown y rsync -a falla
+#    ("chown ... Operation not permitted"). Copiar solo los .aml de ACPI (los .dsl
+#    son fuentes y no se cargan).
 MP="/run/media/$USER/MACOS"
 mkdir -p "$MP/com.apple.recovery.boot"
-cp macos/recovery_ventura/com.apple.recovery.boot/BaseSystem.dmg      "$MP/com.apple.recovery.boot/"
+cp macos/recovery_ventura/com.apple.recovery.boot/BaseSystem.dmg       "$MP/com.apple.recovery.boot/"
 cp macos/recovery_ventura/com.apple.recovery.boot/BaseSystem.chunklist "$MP/com.apple.recovery.boot/"
 
-mkdir -p "$MP/EFI/BOOT" "$MP/EFI/OC"
-rsync -a macos/EFI/OC/ACPI/    "$MP/EFI/OC/ACPI/"
-rsync -a macos/EFI/OC/Drivers/ "$MP/EFI/OC/Drivers/"
-rsync -a macos/EFI/OC/Kexts/   "$MP/EFI/OC/Kexts/"
-rsync -a macos/EFI/OC/Tools/   "$MP/EFI/OC/Tools/"
-cp macos/EFI/OC/OpenCore.efi   "$MP/EFI/OC/"
-cp macos/EFI/OC/config.plist   "$MP/EFI/OC/"
-cp macos/EFI/BOOT/BOOTx64.efi  "$MP/EFI/BOOT/"
+mkdir -p "$MP/EFI/BOOT" "$MP/EFI/OC/ACPI" "$MP/EFI/OC/Drivers" "$MP/EFI/OC/Kexts" "$MP/EFI/OC/Tools"
+cp macos/EFI/OC/ACPI/*.aml      "$MP/EFI/OC/ACPI/"
+cp -r macos/EFI/OC/Drivers/.    "$MP/EFI/OC/Drivers/"
+cp -r macos/EFI/OC/Kexts/.      "$MP/EFI/OC/Kexts/"
+cp -r macos/EFI/OC/Tools/.      "$MP/EFI/OC/Tools/"
+cp macos/EFI/OC/OpenCore.efi    "$MP/EFI/OC/"
+cp macos/EFI/OC/config.plist    "$MP/EFI/OC/"
+cp macos/EFI/BOOT/BOOTx64.efi   "$MP/EFI/BOOT/"
 sync
 
-# 6. Validar (debe decir "No issues found")
+# 7. Validar (debe decir "No issues found")
 macos/tools/ocvalidate "$MP/EFI/OC/config.plist"
 
-# 7. Verificar integridad
+# 8. Verificar integridad
 md5sum macos/EFI/OC/config.plist "$MP/EFI/OC/config.plist"
+cmp macos/recovery_ventura/com.apple.recovery.boot/BaseSystem.dmg "$MP/com.apple.recovery.boot/BaseSystem.dmg" && echo "DMG OK"
 ```
+
+> **Atajo:** los scripts `/tmp/rebuild_usb.sh` (formatea) + `/tmp/finish_usb.sh` (copia EFI con `cp`)
+> automatizan todo esto con guardas de seguridad (verifican tamaño/modelo antes de borrar) y todas
+> las validaciones. Se usaron en la reconstrucción del 2026-06-01.
 
 > **Notas criticas:**
 > - `BOOTx64.efi` debe ser el **Bootstrap** (~24 KB), NO una copia de `OpenCore.efi` (~626 KB). Si los tamaños son iguales algo está mal.
+> - **`wipefs -a` antes de particionar** — si no, una firma iso9660 residual (ej. de un USB que antes fue de Debian) sobrevive y puede confundir al firmware HP.
+> - **`cp`, nunca `rsync -a`** sobre el USB — FAT32 no soporta ownership Unix.
+> - **`mkfs.vfat` cambia el UUID de la partición.** Eso invalidaba entradas NVRAM viejas del firmware HP, pero NO rompe el arranque porque `BOOTx64.efi` (Bootstrap) arranca por el path de fallback `\EFI\BOOT\BOOTx64.efi` (independiente del UUID) y `LauncherOption=Disabled` evita la entrada NVRAM autorreferencial.
+> - **No regenerar `config.plist` solo para reconstruir el USB:** el generador asigna un `SystemUUID`/`ROM` nuevos en cada run. Usa el `config.plist` ya existente para mantener el SMBIOS estable.
 > - Usar siempre un puerto **USB 2.0 (negro)** al arrancar en el HP 245 G8.
 > - El recovery en `macos/recovery_ventura/` se descargó con `scripts/02_download_recovery.sh`. Si se pierde, volver a ejecutarlo (necesita internet).
 
