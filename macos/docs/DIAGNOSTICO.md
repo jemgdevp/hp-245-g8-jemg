@@ -515,3 +515,51 @@ el comando `cp -R /Volumes/EFI/EFI /Volumes/EFI/` (sugerido por un asistente ext
 7. **Sonoma/Sequoia:** evaluar actualización (NootedRed soporta versiones nuevas; requiere OpenCore
    y NootedRed recientes). NO usar "Software Update" directo — hacer USB nueva y update controlado.
 
+## Plan de post-install (investigado 2026-06-02, workflow Dortania + NootedRed + AMD-OSX)
+
+Regla transversal: **un solo cambio por arranque**, `ocvalidate` antes de sincronizar, y **backup
+del EFI que ya arranca** antes de tocar nada (`cp -r EFI EFI_OK_ventura`). El EFI vivo es el del
+disco interno (`sda1`); los cambios del generador llegan ahí copiando el `config.plist` al ESP
+interno (MountEFI desde macOS, o montando `sda1` desde Arch).
+
+### Diagnóstico de la iGPU — "falta aceleración"
+- **Causa #1 (más probable): UMA Frame Buffer bajo en BIOS (512 MB) → sin Metal.** NootedRed exige
+  ≥512 MB y **1 GB+ para acelerar de verdad**. Síntoma: "Acerca de este Mac" muestra la GPU con
+  VRAM ridícula (~7 MB) y sin nombre = estás en VESA/fallback, no Metal. **Se arregla en BIOS**
+  (subir UMAF a ≥1 GB; si HP no lo expone, **Smokeless_UMAF**), NO en el config.
+- **Verificar primero** (antes de cambiar nada):
+  - "Acerca de este Mac" / Información del Sistema → Gráficos: debe listar "AMD Radeon ... Renoir/
+    Raven Graphics" con la VRAM asignada.
+  - `system_profiler SPDisplaysDataType | grep -i "Metal\|VRAM\|Chipset"`
+  - `ioreg -l | grep -i "MetalPluginName\|IOAccelerator"` → presentes = aceleración real.
+- **NO añadir DeviceProperties al iGPU** (rompe NootedRed). Dejar `DeviceProperties>Add` vacío.
+- **`revblock=media`** (arg de RestrictEvents) añadido a boot-args — mejora estabilidad/aspecto.
+- **Limitaciones permanentes de NootedRed (no son fallos a arreglar):** sin VCN/DRM (decodificación
+  HW de vídeo, issue #28), sin audio por HDMI, sleep/wake no fiable. Transversales a Ventura/Sonoma/Sequoia.
+
+### Pasos por prioridad
+1. **iGPU:** BIOS UMAF ≥1 GB (Smokeless_UMAF si no se expone) + `revblock=media` (ya en config). Verificar Metal.
+2. **Audio:** `alcid=13` ya puesto (funcional en Otus9051). Si falla, bisecar `alcid=` (uno por arranque):
+   `3 → 13 → 11 → 12 → 14 → 15 → 19 → 23`. Al acertar, migrar a `layout-id` en DeviceProperties del HDEF y quitar `alcid=`.
+3. **USB mapping:** reemplazar `UTBDefault` por `UTBMap.kext` real. Mapear con USBToolBox/tool desde
+   **Windows** (companion, no depende de SMBIOS) o **USBMap (corpnewt)** desde macOS. Máx **15 puertos**
+   por controlador. Orden: `USBToolBox.kext` antes de `UTBMap.kext`; eliminar `UTBDefault`.
+4. **Power management AMD: DEJAR OFF** (DummyPowerManagement=True + kexts OFF). Panic confirmado con
+   `AMDRyzenCPUPowerManagement v0.7.2 + DummyPM=False` (Caps Lock). Experimentar solo en copia del EFI.
+5. **Limpiar boot-args de debug** (cuando todo funcione): quitar `-v keepsyms=1 debug=0x100`.
+   Objetivo diario aprox.: `npci=0x3000 alcid=13 revblock=media -NRedDPDelay` (+`agdpmod=pikera` solo si HDMI externo).
+6. **SIP/Security:** `SecureBootModel=Disabled` (kexts sin firmar) — dejar. `csr-active-config`:
+   mantener `03080000` mientras se tocan kexts; subir a `00000000` (SIP completo) cuando se estabilice.
+   `ScanPolicy=0`: dejar (muestra USB/Recovery/Linux en el picker).
+7. **Arranque sin USB:** ya blessed (arranca del HDD). **Dejar `LauncherOption=Disabled`** (cambiarlo
+   reintrodujo el bucle "Already Started"); el firmware arranca por fallback `\EFI\BOOT\BOOTx64.efi`
+   (Bootstrap 24K). Opcional `BootProtect=Bootstrap` si algo pisa el BOOTx64. No tocar el NVMe (Arch).
+
+### Decisión de versión: QUEDARSE EN VENTURA 13
+- Ventura es la versión **más rodada** para Renoir/Lucienne con NootedRed (las refs del mismo CPU
+  están calibradas aquí). **Sonoma** = movimiento lateral (crashes/bootloop propios: issues #194/#257/#286).
+  **Sequoia** = experimental ("crashes; no daily driver" según el repo). Nada que falta mejora al subir.
+- Si en el futuro hay que subir: **USB instalador nuevo, NUNCA Software Update directo**; mantener el
+  EFI/instalación de Ventura como fallback. NootedRed 0.8.10 (ya lo tenemos) sirve hasta macOS 26;
+  OpenCore último 1.0.x; AMD_Vanilla actualizado (solo Sequoia: activar su parche PAT y desactivar el previo).
+
