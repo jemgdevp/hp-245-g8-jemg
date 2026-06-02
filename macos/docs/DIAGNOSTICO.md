@@ -643,6 +643,10 @@ duplicar carpetas EFI.
   CPPC en la APU Lucienne móvil (no es de versión). El SMU del firmware ya gobierna con DummyPM=True.
 - **ECEnabler 1.0.5** (de hp-245-g8-efi-base) y **SSDT-RTCAWAC** (de otus9051) copiados al árbol EFI.
   Quedan disponibles pero solo el perfil postinstall los declara.
+- **RealtekRTL8111 2.4.2** (de hp-245-g8-efi-base) añadido al perfil postinstall. El puerto RJ45 de
+  este equipo se dañó (corto por tormenta) y no aparece en `lspci` (desconectado del bus PCI), así
+  que el kext no engancha nada y queda inactivo — inofensivo. Se deja listo por si se repara/reemplaza
+  el puerto. NO revive hardware muerto. (La WiFi RTL8822CE sigue sin soporte nativo → dongle USB.)
 
 Los 3 perfiles validan con ocvalidate (0 errores). USB mapping real (`UTBMap.kext`) sigue pendiente
 de generar en macOS con USBMap/USBToolBox enchufando dispositivos en cada puerto físico.

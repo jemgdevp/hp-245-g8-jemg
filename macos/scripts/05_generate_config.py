@@ -163,7 +163,14 @@ PROFILES = {
     "postinstall": dict(
         verbose=False, target=3,  apple_debug=False, watchdog=False, timeout=5,
         apfs_trim=0,   usb="utbmap",
-        extra_kexts=[("ECEnabler", "x86_64", "", "", False)],
+        extra_kexts=[
+            ("ECEnabler", "x86_64", "", "", False),
+            # RealtekRTL8111: Ethernet por cable. El puerto RJ45 de este equipo se dañó
+            # (corto por tormenta) y no aparece en el bus PCI, así que el kext no engancha
+            # nada y queda inactivo (inofensivo). Se deja listo por si se repara/reemplaza
+            # el puerto algún día. NO hace revivir hardware muerto (es solo software).
+            ("RealtekRTL8111", "x86_64", "", "", False),
+        ],
         extra_ssdts=["SSDT-RTCAWAC"],
     ),
 }

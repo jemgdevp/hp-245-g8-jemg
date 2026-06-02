@@ -272,7 +272,7 @@ python3 scripts/05_generate_config.py --all                  # genera los 3; dej
 | DisableWatchDog | sí | sí | no |
 | Boot Timeout | 0 (espera) | 0 | 5 (auto-arranca) |
 | USB | UTBDefault | UTBDefault | **UTBMap** (si existe) |
-| Extra kexts/SSDT | — | — | **ECEnabler + SSDT-RTCAWAC** |
+| Extra kexts/SSDT | — | — | **ECEnabler + RealtekRTL8111 + SSDT-RTCAWAC** |
 | SetApfsTrimTimeout | -1 | -1 | **0** (HDD sin TRIM) |
 | AMD PM kexts | OFF | OFF | OFF (ver nota) |
 
