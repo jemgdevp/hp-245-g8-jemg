@@ -623,3 +623,27 @@ revblock=media AMDBacklight=1 -NRedDPDelay`. SMBIOS `iMac20,1`. AMD PM kexts OFF
 **Pendientes (no bloqueantes):** WiFi RTL8822CE (no soportado → dongle USB), USB mapping real con
 USBToolBox, limpiar `-v debug=0x100 keepsyms=1` para uso diario. **Versión: se queda en Ventura.**
 
+## Refactor 2026-06-02 — 3 perfiles de EFI + identidad fija
+
+El generador `05_generate_config.py` pasa a soportar `--profile {install,stable,postinstall}`
+(y `--all`). Diseño: **un solo árbol** de kexts/SSDTs; cada perfil es un `config.plist` distinto
+guardado en `EFI/OC/profiles/config-<perfil>.plist`; el activo (`EFI/OC/config.plist`) es el que
+sincroniza el script 06. OpenCore solo carga lo declarado en cada config, así que no hace falta
+duplicar carpetas EFI.
+
+- **install / stable:** verbose+debug (`-v keepsyms=1 debug=0x100`), Target=67 (log a ESP),
+  Timeout=0, UTBDefault, SetApfsTrimTimeout=-1. `stable` = ancla del EFI que arranca hoy
+  (verificado bit-a-bit idéntico al config previo: anti-regresión).
+- **postinstall:** sin verbose/debug, Target=3, Timeout=5 (auto-arranca), **+ECEnabler.kext**
+  (batería fiable tras wake) **+SSDT-RTCAWAC.aml** (RTC/sleep), SetApfsTrimTimeout=**0** (HDD sin
+  TRIM), y **UTBMap** si existe (si no, mantiene UTBDefault y avisa).
+- **Identidad FIJA:** `SystemUUID` y `ROM` pasan de regenerarse aleatoriamente en cada run a ser
+  **constantes** (los del config que funciona) — evita romper iMessage/iCloud/NVRAM entre regens.
+- **AMD PM:** OFF en los 3 perfiles. Causa raíz del panic documentada: P-states legacy por MSR sin
+  CPPC en la APU Lucienne móvil (no es de versión). El SMU del firmware ya gobierna con DummyPM=True.
+- **ECEnabler 1.0.5** (de hp-245-g8-efi-base) y **SSDT-RTCAWAC** (de otus9051) copiados al árbol EFI.
+  Quedan disponibles pero solo el perfil postinstall los declara.
+
+Los 3 perfiles validan con ocvalidate (0 errores). USB mapping real (`UTBMap.kext`) sigue pendiente
+de generar en macOS con USBMap/USBToolBox enchufando dispositivos en cada puerto físico.
+

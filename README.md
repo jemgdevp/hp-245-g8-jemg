@@ -114,7 +114,8 @@ USB: FAT32, GPT, etiqueta MACOS (~7.5 GB con LED de actividad)
 | AppleALC | ON | Audio alcid=13 |
 | RestrictEvents | ON | SMBIOS iMac20,1 |
 | NVMeFix | ON | Kingston NV3 |
-| VoodooPS2Controller | ON | Teclado/trackpad (no funciona en Recovery aun) |
+| VoodooPS2Controller (+plugins) | ON | Teclado interno (funciona) |
+| VoodooI2C (+plugins) / VoodooI2CHID | ON | Touchpad ELAN I2C (funciona) |
 | BrightnessKeys | ON | Fn+brillo |
 | USBToolBox + UTBDefault | ON | USB mapping |
 | SMCBatteryManager | ON | Bateria |
@@ -250,23 +251,50 @@ USB_LABEL=MACOS MOUNT_POINT=/run/media/$USER/MACOS ./scripts/06_sync_usb_efi.sh
 
 **Importante**: Siempre usa un puerto **USB 2.0 (negro)** para el pendrive del instalador durante las pruebas.
 
-## Tests pendientes (instalador ya arranca — ahora a instalar)
+## Perfiles de EFI (install / stable / postinstall)
 
-El instalador de Recovery arranca correctamente. Los tests de framebuffer anteriores quedan superados. Lo que queda:
+El generador produce 3 perfiles sobre **un solo árbol de kexts/SSDTs** (no duplica carpetas).
+Cada uno es un `config.plist` distinto guardado en `EFI/OC/profiles/`; el activo (`EFI/OC/config.plist`)
+es el que sincroniza `06_sync_usb_efi.sh`.
 
-### Prioridad alta (instalacion + teclado/touchpad)
+```bash
+cd macos
+python3 scripts/05_generate_config.py --profile install      # USB instalador
+python3 scripts/05_generate_config.py --profile postinstall  # uso diario (disco interno)
+python3 scripts/05_generate_config.py --profile stable       # = el EFI que arranca hoy (ancla)
+python3 scripts/05_generate_config.py --all                  # genera los 3; deja 'stable' activo
+```
 
-1. **Instalar macOS Ventura** usando mouse USB externo para navegar el Recovery (el teclado interno no funciona, pero el mouse USB si).
-2. **Reparar teclado interno y touchpad** — VoodooPS2Controller esta cargado pero no enumerando el dispositivo PS2. Ver seccion "Siguiente paso".
-3. **USB mapping real** — UTBDefault es un placeholder; hacer el mapping correcto para este HP con USBToolBox desde macOS.
-4. **AMD CPU Power Management** — una vez instalado, probar reactivar AMDRyzenCPUPowerManagement + SMCAMDProcessor (desactivar DummyPowerManagement).
+| Clave | install | stable (=actual) | postinstall |
+|---|---|---|---|
+| boot-args debug (`-v keepsyms=1 debug=0x100`) | sí | sí | **no** |
+| Misc>Debug Target | 67 (log a ESP) | 67 | 3 (sin log) |
+| DisableWatchDog | sí | sí | no |
+| Boot Timeout | 0 (espera) | 0 | 5 (auto-arranca) |
+| USB | UTBDefault | UTBDefault | **UTBMap** (si existe) |
+| Extra kexts/SSDT | — | — | **ECEnabler + SSDT-RTCAWAC** |
+| SetApfsTrimTimeout | -1 | -1 | **0** (HDD sin TRIM) |
+| AMD PM kexts | OFF | OFF | OFF (ver nota) |
 
-### Prioridad media (post-instalacion)
+Invariantes (idénticos en los 3): SMBIOS iMac20,1, NootedRed, parches AMD_Vanilla (cores=4),
+quirks alineados a Otus9051, input (PS2+I2C), `AMDBacklight=1`, SystemUUID/ROM **fijos**.
 
-5. **Audio** — AppleALC + alcid=13 ya configurado, verificar que funciona tras instalar.
-6. **Brillo de pantalla** — SSDT-PNLF incluido, verificar control de brillo con BrightnessKeys.
-7. **Bateria** — SMCBatteryManager incluido, verificar lecturas correctas.
-8. **WiFi** — RTL8822CE no tiene soporte nativo; usar dongle USB-Ethernet para conectividad.
+## Pendientes (post-instalación)
+
+1. **USB mapping real** — generar `UTBMap.kext` con USBToolBox/USBMap **desde macOS** (enchufando
+   en cada puerto físico) y dejarlo en `EFI/OC/Kexts/`; el perfil `postinstall` lo usa automáticamente.
+2. **AMD CPU PM** — se queda **OFF**. No es problema de versión: esos kexts escriben P-states legacy
+   por MSR sin CPPC, que es justo lo que la APU Lucienne móvil usa → cuelgan/paniquean. El SMU del
+   firmware ya gobierna frecuencia/voltaje con `DummyPowerManagement=True`. (Opcional: `SMCProcessorAMD`
+   solo-sensores para ver temperaturas, sin tocar PM.)
+3. **WiFi RTL8822CE** — sin soporte nativo en macOS; usar dongle USB. Ver `macos/docs/wifi_rtl8822ce.md`.
+4. **Migrar a SSD/NVMe** (opcional) — macOS está en HDD WD (funciona, pero lento). El NVMe actual es
+   de Arch (no tocar); requeriría otro disco.
+
+### Ya funcionando ✅
+
+iGPU acelerada (2 GB VRAM, Metal 3) · **teclado interno** · **touchpad** · brillo · audio (alcid=13)
+· batería · arranque sin USB · dual boot con Arch.
 
 ## Estructura del proyecto
 
@@ -310,64 +338,32 @@ El script de sincronizacion ha sido mejorado significativamente:
 
 El script tambien muestra el perfil actual del generador al terminar (si tienes `-NRedDPDelay` y si estas en modo ACPI minimal).
 
-## Estado actual de pruebas (2026-05-31)
-
-**HITO CONFIRMADO**: El instalador de macOS Ventura arranca exitosamente en el HP 245 G8.
-
-- Secuencia de arranque: lineas blancas (verbose) → logo Apple → pantalla Recovery de macOS Ventura.
-- Pantalla interna funciona con NootedRed v0.8.10 habilitado.
-- **Teclado interno y touchpad PS2 no funcionan** en el Recovery. VoodooPS2Controller esta cargado pero no detecta el dispositivo PS2 de este HP.
-- **Mouse USB externo funciona** correctamente — workaround disponible para navegar el instalador.
-- El proximo paso es proceder con la instalacion y luego reparar los dispositivos de entrada.
-
 ## Flujo de trabajo recomendado
 
 ```bash
-# 1. Editar toggles en el generador
+cd macos
+
+# 1. Editar el generador (fuente de verdad) si hace falta
 nano scripts/05_generate_config.py
 
-# 2. Regenerar + validar
-python3 scripts/05_generate_config.py
+# 2. Regenerar el perfil deseado + validar
+python3 scripts/05_generate_config.py --profile postinstall
 ./tools/ocvalidate ./EFI/OC/config.plist
 
-# 3. Sincronizar (completo por defecto)
-./scripts/06_sync_usb_efi.sh
+# 3a. Sincronizar al USB (perfil install)
+./scripts/06_sync_usb_efi.sh            # SYNC_FAST=1 para iterar sin los ~360 mp3 de audio
 
-# O version rapida (sin audios)
-SYNC_FAST=1 ./scripts/06_sync_usb_efi.sh
+# 3b. O copiar al disco interno (perfil postinstall): MountEFI en macOS → reemplazar
+#     EFI/OC/config.plist en el ESP del disco → Reset NVRAM (CleanNvram) → reiniciar.
 ```
 
-## Siguiente paso
+## Reinstalar desde cero (referencia rápida)
 
-El Recovery arranca. Estos son los pasos concretos para continuar:
+1. Reconstruir el USB: `sudo ./scripts/07_rebuild_usb.sh /dev/sdX` (perfil install). Arrancar en puerto USB 2.0.
+2. Recovery → Utilidad de Discos → **Erase** del disco destino (HDD WD, **nunca el NVMe**) en APFS/GUID.
+3. Instalar. Si la fase de copia se congela, añadir `-NRedNoAccel` *manual en el picker* (solo esa sesión).
+   **No** forzar apagados (corrompe el instalador staged → `LoadImage Unsupported`).
+4. Tras instalar: copiar el EFI al disco interno con **MountEFI** (perfil postinstall). Ver `macos/docs/DIAGNOSTICO.md`.
 
-### 1. Instalar macOS Ventura
-
-- Conectar mouse USB externo (el teclado interno no funciona aun en Recovery).
-- Arrancar desde el USB con el pendrive en puerto USB 2.0 (negro).
-- En el Recovery: Utilidades de Disco → formatear el NVMe como APFS, GPT.
-- Lanzar "Reinstalar macOS Ventura" → seleccionar el NVMe formateado.
-- La instalacion requiere internet. Usar dongle USB-Ethernet (RTL8153) conectado al hub o directo.
-- El proceso tarda ~30 minutos. El equipo reinicia varias veces; en cada reinicio seleccionar la entrada del NVMe (no el USB) en el picker de OpenCore.
-
-### 2. Post-instalacion: reparar teclado interno y touchpad PS2
-
-El problema probable es que VoodooPS2Controller no esta enumerando el PS2 de este HP. Pasos para diagnosticar y reparar:
-
-1. **Verificar que el PS2 aparece en ACPI**: buscar `PS2K` o `PS2M` en `macos/docs/DSDT.dsl`. Si no hay dispositivo PS2 declarado en la DSDT, hay que crear un SSDT que lo declare.
-2. **Revisar logs de arranque** (opencore-*.txt en la ESP) buscando errores de VoodooPS2.
-3. **Probar VoodooPS2Controller nightly** de ChefKiss si el de acidanthera no funciona con este HP.
-4. **SSDT-PS2**: algunos HP con BIOS AMI necesitan un SSDT que declare el dispositivo PS2 explicitamente (`_SB.PCI0.LPC0.PS2K`). El path exacto se saca de la DSDT volteada de este equipo.
-5. **Alternativa temporal**: usar un teclado USB externo + mouse USB para la post-instalacion mientras se resuelve el PS2.
-
-### 3. Completar la post-instalacion
-
-Una vez que el sistema arranque desde el NVMe:
-
-- **USB mapping real**: ejecutar USBToolBox desde macOS, generar un `UTBMap.kext` especifico para este HP (reemplaza el UTBDefault generico).
-- **AMD CPU PM**: probar habilitar AMDRyzenCPUPowerManagement + SMCAMDProcessor, deshabilitar DummyPowerManagement.
-- **Verificar audio**: AppleALC con alcid=13 deberia funcionar; si no, probar alcid=11 o alcid=99.
-- **Verificar brillo**: BrightnessKeys + SSDT-PNLF. Si no funciona revisar el path del panel en SSDT-PNLF contra la DSDT.
-- **Montar EFI del NVMe**: una vez que todo funcione, copiar el EFI al NVMe para arrancar sin USB.
-
-**Ultima actualizacion**: 2026-05-31 — Recovery de macOS Ventura arranca exitosamente. Pendiente: instalacion + teclado/touchpad PS2.
+**Última actualización**: 2026-06-02 — macOS Ventura **funcional** (iGPU/brillo/audio/batería/input OK),
+arranca sin USB. Sistema de 3 perfiles de EFI. Pendiente: USB mapping real.

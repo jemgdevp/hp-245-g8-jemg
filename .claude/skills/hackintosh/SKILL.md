@@ -45,22 +45,33 @@ description: "Especialista en EFI OpenCore para HP 245 G8 (Ryzen 3 5300U, Lucien
 | BOOTx64.efi = copia de OpenCore.efi | Bootstrap de 24KB | Mismo tamaño → "failed to load configuration" |
 | LauncherOption=Full | LauncherOption=Disabled | Entrada NVRAM autorreferencial → bucle StartImage |
 
+## Perfiles de EFI
+
+Un solo árbol de kexts/SSDTs; 3 `config.plist` en `EFI/OC/profiles/` (el activo es `EFI/OC/config.plist`):
+- `--profile install` → USB instalador (verbose+debug, UTBDefault).
+- `--profile stable` → = el EFI que arranca hoy (ancla anti-regresión; default).
+- `--profile postinstall` → uso diario (sin debug, Timeout=5, +ECEnabler +SSDT-RTCAWAC, ApfsTrim=0 HDD, UTBMap si existe).
+- `--all` → genera los 3, deja `stable` activo.
+
+SystemUUID/ROM están **fijos** (constantes) — no se regeneran en cada run. AMD PM se queda OFF en los 3.
+
 ## Flujo de trabajo estándar
 
 ```bash
 cd macos
 
-# 1. Editar toggles si hace falta
+# 1. Editar el generador si hace falta (fuente de verdad)
 nano scripts/05_generate_config.py
 
-# 2. Regenerar (hace backup automático)
-python3 scripts/05_generate_config.py
+# 2. Regenerar el perfil deseado (hace backup automático)
+python3 scripts/05_generate_config.py --profile postinstall
 
 # 3. Validar (siempre antes de sync)
 ./tools/ocvalidate ./EFI/OC/config.plist   # debe decir "No issues found"
 
-# 4. Sincronizar al USB (sync rápido sin audios)
+# 4a. USB: sincronizar (perfil install). SYNC_FAST=1 sin audios
 SYNC_FAST=1 ./scripts/06_sync_usb_efi.sh
+# 4b. Disco interno: MountEFI → reemplazar config.plist en el ESP → Reset NVRAM
 
 # 5. Arrancar desde puerto USB 2.0 (negro)
 ```
