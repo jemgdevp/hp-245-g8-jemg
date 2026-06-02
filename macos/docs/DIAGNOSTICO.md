@@ -651,3 +651,34 @@ duplicar carpetas EFI.
 Los 3 perfiles validan con ocvalidate (0 errores). USB mapping real (`UTBMap.kext`) sigue pendiente
 de generar en macOS con USBMap/USBToolBox enchufando dispositivos en cada puerto físico.
 
+## Auditoría de kexts 2026-06-02 — guía oficial ChefKiss + 4 subagentes + EFIs de referencia
+
+Investigación exhaustiva (guía oficial de ChefKiss clonada de `git.chefkiss.dev/ChefKiss/Website`
+→ `kexts.mdx`, + foros AMD-OSX/r-hackintosh, + repos azurejelly/beitanam/Otus9051). Conclusión: el
+stack ya está completo; casi nada genuino que añadir. Cambios aplicados al perfil **postinstall**:
+
+- **Quitado `SMCSuperIO`** — la guía oficial dice literal *"Do NOT use on AMD"* (monitoriza fans;
+  en AMD no aplica). Estaba ON por inercia. Fuera en postinstall.
+- **Quitado `AppleALCU`** — subconjunto digital de AppleALC con `MinKernel 23.0.0` (Sonoma): en
+  Ventura ni cargaba, y el audio HDMI no funciona con NootedRed. Redundante. Solo AppleALC.
+- **Añadido `revpatch=cpuname`** a boot-args — nombre real del CPU en "Acerca de este Mac"
+  (RestrictEvents, guía oficial). Cosmético, seguro. Junto a `revblock=media`.
+
+Mecanismo nuevo en el generador: campos `extra_args` y `remove_kexts` por perfil (la limpieza solo
+toca postinstall; stable/install quedan intactos como ancla).
+
+**Opcionales NO aplicados (cosméticos, requieren descargar el .kext):**
+- `SMCRadeonSensors` (ChefKiss) — temperatura del iGPU AMD en iStat/HWMonitor.
+- `SMCProcessorAMD` (Lorys89, el fork que la guía oficial enlaza) — temperatura del CPU AMD; es
+  plugin de VirtualSMC independiente (NO el de trulyspinach, que arrastra AMDRyzenCPUPowerManagement).
+- `AMDMicrophone` (qhuyduong) — micrófono interno digital (ACP) de Renoir; va en `/Library/Extensions/`
+  con SIP relajado (`csr=01000000`), NO por OpenCore. Solo si se necesita el micro interno.
+
+**Descartados (NO aplican a este hardware/Ventura), confirmado por guía + agentes:** FeatureUnlock
+(requiere iGPU Intel), CryptexFixup (no-op con AVX2 de Zen2), AMFIPass (no desactivamos AMFI),
+NoTouchID (corregido desde Big Sur), CpuTopologyRebuild (solo Intel híbrido), CpuTscSync/AmdTscSync
+(conflicto con ForgedInvariant), HibernationFixup (sleep roto por NootedRed #429 + HDD), VoodooRMI
+(es para Synaptics; nuestro touchpad es ELAN por HID), GenericUSBXHCISB (no tenemos el cuelgue USB),
+y todos los de WiFi/BT/Ethernet de otro hardware (Intel/Broadcom/RTL distinto). NootedRed: nunca con
+WhateverGreen y NUNCA DeviceProperties al iGPU (verificado: DeviceProperties>Add vacío).
+

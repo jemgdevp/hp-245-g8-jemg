@@ -155,10 +155,12 @@ PROFILES = {
     "install": dict(
         verbose=True,  target=67, apple_debug=True,  watchdog=True,  timeout=0,
         apfs_trim=-1,  usb="utbdefault", extra_kexts=[], extra_ssdts=[],
+        extra_args="", remove_kexts=[],
     ),
     "stable": dict(
         verbose=True,  target=67, apple_debug=True,  watchdog=True,  timeout=0,
         apfs_trim=-1,  usb="utbdefault", extra_kexts=[], extra_ssdts=[],
+        extra_args="", remove_kexts=[],
     ),
     "postinstall": dict(
         verbose=False, target=3,  apple_debug=False, watchdog=False, timeout=5,
@@ -172,6 +174,14 @@ PROFILES = {
             ("RealtekRTL8111", "x86_64", "", "", False),
         ],
         extra_ssdts=["SSDT-RTCAWAC"],
+        # revpatch=cpuname: muestra el nombre real del CPU en "Acerca de este Mac"
+        # (guía oficial ChefKiss). Cosmético, seguro. Se suma a revblock=media de _BASE_ARGS.
+        extra_args="revpatch=cpuname",
+        # Limpieza alineada con la guía oficial de ChefKiss:
+        # - SMCSuperIO: "Do NOT use on AMD" (monitoriza fans; en AMD no aplica).
+        # - AppleALCU: subconjunto digital de AppleALC; MinKernel 23 (Sonoma) → en Ventura
+        #   ni carga, y el audio HDMI no funciona con NootedRed. Redundante. Solo AppleALC.
+        remove_kexts=["SMCSuperIO", "AppleALCU"],
     ),
 }
 
@@ -304,8 +314,11 @@ def build_config(profile="stable"):
     rom = ROM_FIXED             # FIJO
     rom_str = ":".join(f"{b:02x}" for b in rom)
 
-    # boot-args del perfil: el prefijo de debug (-v keepsyms debug=0x100) solo en verbose.
+    # boot-args del perfil: prefijo de debug (-v keepsyms debug=0x100) solo en verbose,
+    # + extra_args del perfil (p.ej. revpatch=cpuname en postinstall).
     boot_args = (_DEBUG_ARGS + " " + _BASE_ARGS) if cfg["verbose"] else _BASE_ARGS
+    if cfg.get("extra_args"):
+        boot_args = boot_args + " " + cfg["extra_args"]
 
     print(f"  Serial:      {SERIAL}")
     print(f"  MLB:         {MLB}")
@@ -413,6 +426,12 @@ def build_config(profile="stable"):
             print("          se mantiene UTBDefault. Genera el mapping real en macOS (USBMap).")
     # Kexts extra del perfil (p.ej. ECEnabler en postinstall)
     kexts += cfg["extra_kexts"]
+    # Kexts a quitar en este perfil (p.ej. SMCSuperIO/AppleALCU en postinstall, guía ChefKiss).
+    # Compara por el primer componente del nombre (soporta sub-plugins por path).
+    remove = set(cfg.get("remove_kexts", []))
+    if remove:
+        kexts = [k for k in kexts if k[0].split("/")[0] not in remove]
+        print(f"  Kexts quitados ({profile}): {', '.join(sorted(remove))}")
 
     template["Kernel"]["Add"] = [
         kext_entry(name, arch, mink, maxk, noex)
