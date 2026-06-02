@@ -21,28 +21,33 @@
 - VRAM subida a **2 GB** en BIOS (crítico para NootedRed).
 - No tiene Above 4G Decoding fácil → usamos `npci=0x3000`.
 
-## Estado actual — Recovery arrancado exitosamente (2026-05-31)
+## Estado actual — macOS Ventura INSTALADO y arrancando sin USB (2026-06-02)
 
-**HITO ALCANZADO**: El instalador de macOS Ventura arranca y muestra la pantalla del Recovery.
+**HITO ALCANZADO**: macOS Ventura 13 instalado en el HDD interno (`sda2`, APFS) y arrancando
+desde el EFI del disco interno (`sda1`) **sin la USB**. Dual boot con Arch Linux (NVMe) intacto.
 
-- Secuencia de arranque confirmada: verbose (lineas blancas) → logo Apple → pantalla Recovery de macOS Ventura.
-- La pantalla interna funciona correctamente con NootedRed habilitado.
-- **Teclado interno y touchpad PS2 NO funcionan** en el Recovery. VoodooPS2Controller está cargado pero requiere ajuste.
-- **Mouse USB externo SÍ funciona** en el Recovery — workaround suficiente para lanzar la instalacion.
+- Secuencia confirmada: instalador → copia/extracción → reinicios → primer boot desde disco → escritorio.
+- **Teclado interno y touchpad funcionan** (fix de sub-plugins PS2/I2C + parche `_OSI→XOSI`).
+- **NootedRed activo** — pendiente verificar aceleración iGPU completa (Metal/VRAM) en post-install.
+- Lo que faltó durante la instalación: añadir `-NRedNoAccel` manualmente en el picker (solo para
+  esa sesión, no va en el config) para pasar el muro del framebuffer en la fase de copia.
+- Lo que destrabó la instalación: **USB reconstruido limpio** (sin firma iso9660 residual) +
+  quirks alineados con Otus9051 + `agdpmod=pikera`. Ver `macos/docs/DIAGNOSTICO.md`.
 - Generador (`05_generate_config.py`) es la fuente de verdad del `config.plist`.
-- Historial completo de bisección en `macos/docs/DIAGNOSTICO.md`.
 
 ### Config que funciona (estado actual del EFI)
 
 | Parametro | Valor |
 |---|---|
+| macOS | Ventura 13 — instalado en `sda2` (APFS) |
 | NootedRed | v0.8.10 — HABILITADO |
 | AMDRyzenCPUPowerManagement | DESHABILITADO (causa kernel panic) |
 | SMCAMDProcessor | DESHABILITADO (depende del anterior) |
 | DummyPowerManagement | True |
 | TSC sync | ForgedInvariant v1.5.0 |
 | SSDT CPU | SSDT-PLUG-ALT.aml (version AMD) |
-| boot-args | `-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 -NRedDPDelay` |
+| Booter/Kernel quirks | `DevirtualiseMmio`/`ProtectUefiServices`/`DisableIoMapper`/`LapicKernelPanic` = False (alineado Otus9051) |
+| boot-args | `-v keepsyms=1 debug=0x100 npci=0x3000 alcid=13 agdpmod=pikera -NRedDPDelay` |
 | SMBIOS | iMac20,1 |
 
 ## USB instalador — qué lleva y cómo recrearlo desde cero
@@ -172,6 +177,39 @@ cmp macos/recovery_ventura/com.apple.recovery.boot/BaseSystem.dmg "$MP/com.apple
 > - **No regenerar `config.plist` solo para reconstruir el USB:** el generador asigna un `SystemUUID`/`ROM` nuevos en cada run. Usa el `config.plist` ya existente para mantener el SMBIOS estable.
 > - Usar siempre un puerto **USB 2.0 (negro)** al arrancar en el HP 245 G8.
 > - El recovery en `macos/recovery_ventura/` se descargó con `scripts/02_download_recovery.sh`. Si se pierde, volver a ejecutarlo (necesita internet).
+
+---
+
+## Post-instalación — copiar el EFI al disco interno (arrancar sin USB)
+
+Una vez macOS está instalado y arranca (todavía con la USB), hay que copiar la carpeta `EFI/`
+al ESP del disco interno para poder quitar la USB. **Desde macOS** el método recomendado es
+**MountEFI** de chris1111 (app gráfica que monta cualquier partición EFI):
+<https://github.com/chris1111/MountEFI>
+
+> ⚠️ **NO** uses `sudo cp -R /Volumes/EFI/EFI /Volumes/EFI/` — copia la EFI sobre sí misma.
+> Hay **dos** particiones EFI (la de la USB y la del disco interno) y macOS las monta como
+> `/Volumes/EFI` y `/Volumes/EFI 1`; hay que distinguirlas bien.
+
+Pasos:
+
+1. Arranca macOS **con la USB puesta**.
+2. Abre **MountEFI** → monta el ESP del **disco interno** (HDD WDC, `disk0s1` normalmente).
+   Vuelve a abrirlo y monta también el ESP de la **USB**. Verás dos volúmenes EFI en Finder.
+3. Identifica cuál es cuál (la de la USB ya tiene una carpeta `EFI/` con OpenCore; la del
+   disco interno suele estar vacía o con un EFI mínimo del firmware).
+4. Copia la carpeta `EFI` **de la USB** → al **ESP del disco interno**.
+5. Verifica que en el disco interno quede `EFI/OC/config.plist`, `EFI/OC/OpenCore.efi` y
+   `EFI/BOOT/BOOTx64.efi` (este último ~24 KB, el Bootstrap).
+6. Apaga, quita la USB, enciende: debe aparecer el picker de OpenCore desde el disco interno.
+
+> Alternativa por Terminal (con cuidado de no confundir los dos volúmenes EFI):
+> ```bash
+> diskutil list                 # identifica disk0s1 (interno) vs el ESP de la USB
+> sudo diskutil mount disk0s1   # ESP del disco interno
+> # copia desde el EFI de la USB (p.ej. "/Volumes/EFI 1/EFI") al interno ("/Volumes/EFI"):
+> sudo rm -rf /Volumes/EFI/EFI && sudo cp -R "/Volumes/EFI 1/EFI" /Volumes/EFI/
+> ```
 
 ---
 

@@ -21,12 +21,16 @@ description: "Especialista en EFI OpenCore para HP 245 G8 (Ryzen 3 5300U, Lucien
 | OpenCore | 1.0.7 |
 | macOS objetivo | Ventura 13 |
 
-## Estado actual (2026-05-31)
+## Estado actual (2026-06-02)
 
-- **Recovery arranca** con verbose → logo Apple → pantalla Recovery ✓
-- **NootedRed ON** desde la instalación (Renoir/Lucienne no tiene framebuffer básico sin él)
-- **Teclado y touchpad NO funcionan** aún en Recovery — en investigación
-- **Mouse USB externo funciona** — usar para navegar el Recovery
+- **macOS Ventura 13 INSTALADO** en HDD (`sda2`, APFS) y arrancando desde el EFI del disco
+  interno (`sda1`) **sin USB**. Dual boot con Arch Linux (NVMe) intacto. ✓
+- **Teclado y touchpad internos funcionan** (sub-plugins PS2/I2C + parche `_OSI→XOSI`). ✓
+- **NootedRed ON** — pendiente verificar aceleración iGPU completa (Metal/VRAM) en post-install.
+- Para pasar la instalación se añadió `-NRedNoAccel` **manual en el picker** (solo esa sesión).
+- Copiar el EFI al disco interno: usar **MountEFI** (chris1111), NO `cp EFI sobre sí misma`.
+- **Pendiente post-install:** aceleración iGPU, audio layout, USB mapping (USBToolBox), power
+  management AMD (reevaluar), y decidir Sonoma/Sequoia.
 
 ## Gotchas confirmados (NO cambiar sin leer)
 

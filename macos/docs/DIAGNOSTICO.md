@@ -472,3 +472,46 @@ Recovery de macOS Ventura. El sistema llega completamente al entorno del instala
      de link-training de NootedRed para el panel 1366x768 de Lucienne.
    - Actualizar ForgedInvariant si sale versión posterior a v1.5.0.
 
+## Sesión 2026-06-02 (cont. 13) — HITO: macOS Ventura INSTALADO y arrancando sin USB
+
+**Resultado:** macOS Ventura 13 quedó instalado en el HDD interno (`sda2`, convertido a APFS por
+el instalador) y el equipo arranca desde el EFI del disco interno (`sda1`) **sin la USB**. El
+dual boot con Arch Linux (NVMe Kingston, LUKS) quedó intacto. Teclado y touchpad internos
+funcionan en el sistema instalado.
+
+**Qué destrabó la instalación (acumulado de las sesiones previas):**
+1. **USB reconstruido desde cero y limpio** (`07_rebuild_usb.sh`): `wipefs -a` eliminó una firma
+   `iso9660` residual (el pendrive fue antes un USB de Debian) que el `parted` no borraba y que
+   confundía al firmware HP. Copia con `cp` (no `rsync -a`, que falla en FAT32 por el chown) y
+   solo los `.aml` de ACPI.
+2. **Quirks alineados con Otus9051** (mismo CPU 5300U, funcional): `DevirtualiseMmio`,
+   `ProtectUefiServices`, `DisableIoMapper`, `LapicKernelPanic` = **False** (estaban en True).
+3. **`agdpmod=pikera`** añadido (lo usa el Lenovo V15 G2, mismo CPU).
+4. **`-NRedNoAccel` manual en el picker** durante la fase de copia/sellado para saltar el muro
+   del framebuffer Vega 6. Es un flag de instalación: NO va en el config (la aceleración Metal
+   se necesita en uso normal).
+
+**Sobre el error previo `OCB: LoadImage failed - Unsupported`:** era el instalador *staged* en el
+HDD (`boot.efi` truncado por los apagados forzados durante los freezes), no el config. Se resolvió
+reconstruyendo el USB limpio y haciendo **Erase** del volumen destino antes de reinstalar.
+
+**Copiar el EFI al disco interno:** se usó **MountEFI** (chris1111,
+<https://github.com/chris1111/MountEFI>) para montar ambos ESP (USB e interno) y copiar la carpeta
+`EFI/` de la USB al disco interno. OJO: hay dos volúmenes EFI (`/Volumes/EFI` y `/Volumes/EFI 1`);
+el comando `cp -R /Volumes/EFI/EFI /Volumes/EFI/` (sugerido por un asistente externo) es **erróneo**
+(copia la EFI sobre sí misma).
+
+### Pendiente — post-instalación (ver guía Dortania para AMD/post-install)
+
+1. **Aceleración iGPU completa:** verificar en "Acerca de este Mac" que la Vega 6 reporta VRAM y
+   que Metal funciona. Si la UI va por CPU o falta aceleración, revisar NootedRed (boot-args,
+   SMBIOS, `revblock`/`revpatch` de RestrictEvents) — el `-NRedNoAccel` NO está en el config.
+2. **Audio:** probar `alcid=13` real (altavoces/auriculares); si falla, layouts alternativos.
+3. **USB mapping real:** sustituir `UTBDefault` por un mapa propio con USBToolBox desde macOS.
+4. **Power management AMD:** reevaluar `AMDRyzenCPUPowerManagement` + `SMCAMDProcessor` con
+   `DummyPowerManagement=False` una vez el sistema esté estable.
+5. **Limpiar boot-args:** para uso diario, considerar quitar `-v debug=0x100 keepsyms=1`.
+6. **WiFi RTL8822CE:** no soportado en macOS — dongle USB-Ethernet/WiFi (ver `wifi_rtl8822ce.md`).
+7. **Sonoma/Sequoia:** evaluar actualización (NootedRed soporta versiones nuevas; requiere OpenCore
+   y NootedRed recientes). NO usar "Software Update" directo — hacer USB nueva y update controlado.
+
