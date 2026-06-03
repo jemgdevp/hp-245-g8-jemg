@@ -667,12 +667,16 @@ stack ya está completo; casi nada genuino que añadir. Cambios aplicados al per
 Mecanismo nuevo en el generador: campos `extra_args` y `remove_kexts` por perfil (la limpieza solo
 toca postinstall; stable/install quedan intactos como ancla).
 
-**Opcionales NO aplicados (cosméticos, requieren descargar el .kext):**
-- `SMCRadeonSensors` (ChefKiss) — temperatura del iGPU AMD en iStat/HWMonitor.
-- `SMCProcessorAMD` (Lorys89, el fork que la guía oficial enlaza) — temperatura del CPU AMD; es
-  plugin de VirtualSMC independiente (NO el de trulyspinach, que arrastra AMDRyzenCPUPowerManagement).
-- `AMDMicrophone` (qhuyduong) — micrófono interno digital (ACP) de Renoir; va en `/Library/Extensions/`
-  con SIP relajado (`csr=01000000`), NO por OpenCore. Solo si se necesita el micro interno.
+**Sensores y micrófono — AÑADIDOS 2026-06-02 (a petición):**
+- `SMCRadeonSensors 2.4.0` (ChefKissInc) — temperatura del iGPU AMD. **Añadido al perfil postinstall.**
+- `SMCProcessorAMD 1.0.1` (**macos86**, fork standalone) — temperatura del CPU AMD. **Añadido al
+  perfil postinstall.** OJO: Lorys89 (que enlaza la guía) está vacío/muerto; se usa el fork de macos86,
+  que NO depende de AMDRyzenCPUPowerManagement (a diferencia del SMCAMDProcessor de trulyspinach, que
+  reintroduce el panic). Ambos son plugins de VirtualSMC, solo lectura — NO tocan power management.
+- `AMDMicrophone 1.0.0` (qhuyduong) — micrófono interno digital (ACP) de Renoir. **Guardado en
+  `macos/extras/` (NO por OpenCore)**; se instala en `/Library/Extensions/`. Nuestro `csr=03080000`
+  ya incluye `CSR_ALLOW_UNTRUSTED_KEXTS`, así que NO hay que relajar más el SIP. Guía:
+  `macos/extras/README.md`. Solo si se necesita el micro interno.
 
 **Descartados (NO aplican a este hardware/Ventura), confirmado por guía + agentes:** FeatureUnlock
 (requiere iGPU Intel), CryptexFixup (no-op con AVX2 de Zen2), AMFIPass (no desactivamos AMFI),

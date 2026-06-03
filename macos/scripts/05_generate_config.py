@@ -172,6 +172,12 @@ PROFILES = {
             # nada y queda inactivo (inofensivo). Se deja listo por si se repara/reemplaza
             # el puerto algún día. NO hace revivir hardware muerto (es solo software).
             ("RealtekRTL8111", "x86_64", "", "", False),
+            # Sensores (plugins de VirtualSMC, cargan tras él). Solo informativos
+            # (temperaturas en iStat/Macs Fan Control); NO tocan power management.
+            # SMCProcessorAMD = fork macos86 STANDALONE (NO el de trulyspinach, que
+            # arrastra AMDRyzenCPUPowerManagement → el panic conocido). Solo lee temps.
+            ("SMCProcessorAMD", "x86_64", "", "", False),   # temperatura CPU AMD
+            ("SMCRadeonSensors", "x86_64", "", "", False),  # temperatura iGPU AMD
         ],
         extra_ssdts=["SSDT-RTCAWAC"],
         # revpatch=cpuname: muestra el nombre real del CPU en "Acerca de este Mac"

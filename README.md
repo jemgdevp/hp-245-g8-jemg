@@ -272,9 +272,17 @@ python3 scripts/05_generate_config.py --all                  # genera los 3; dej
 | DisableWatchDog | sí | sí | no |
 | Boot Timeout | 0 (espera) | 0 | 5 (auto-arranca) |
 | USB | UTBDefault | UTBDefault | **UTBMap** (si existe) |
-| Extra kexts/SSDT | — | — | **ECEnabler + RealtekRTL8111 + SSDT-RTCAWAC** |
+| Extra kexts/SSDT | — | — | **ECEnabler + RealtekRTL8111 + SMCProcessorAMD + SMCRadeonSensors + SSDT-RTCAWAC** |
 | Quita kexts | — | — | **SMCSuperIO** (no va en AMD) **+ AppleALCU** (no carga en Ventura) |
 | Extra boot-args | — | — | **revpatch=cpuname** (nombre real del CPU) |
+
+> **Sensores (postinstall):** `SMCProcessorAMD` (macos86, temperatura CPU) y `SMCRadeonSensors`
+> (temperatura iGPU) son solo informativos (iStat/Macs Fan Control); no tocan power management.
+> Se usa el fork **macos86** de SMCProcessorAMD (standalone), NO el de trulyspinach (que arrastra
+> AMDRyzenCPUPowerManagement → panic).
+>
+> **Micrófono interno:** `AMDMicrophone.kext` está en `macos/extras/` — se instala en
+> `/Library/Extensions/` (NO por OpenCore). Ver `macos/extras/README.md`.
 | SetApfsTrimTimeout | -1 | -1 | **0** (HDD sin TRIM) |
 | AMD PM kexts | OFF | OFF | OFF (ver nota) |
 
