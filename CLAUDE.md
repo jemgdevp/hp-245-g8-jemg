@@ -40,7 +40,7 @@ Es la **única fuente de verdad** del `config.plist`. Cómo funciona y por qué 
 - **`KEXTS`** es una lista de tuplas `(nombre, arch, minkernel, maxkernel, noexec)`. El 5º campo `noexec=True` marca kexts *codeless* (sin binario, p.ej. `AppleMCEReporterDisabler`, `UTBDefault`). Power management AMD real (`SMCAMDProcessor` + `AMDRyzenCPUPowerManagement`) en vez de `DummyPowerManagement`. TSC sync vía `ForgedInvariant` (no `AmdTscSync`).
 - Cada constante y bloque lleva **comentarios densos que justifican la decisión** contra el hardware/log de arranque. No cambies valores sin leer el comentario adyacente — codifican fallos reales ya diagnosticados. Lista de gotchas confirmados:
   - `Cpuid1Data`/`Cpuid1Mask` **vacíos** — spoofear CPUID de Intel sobre los patches AMD causa panic tempranísimo (negro sin verbose).
-  - Booter Quirks en esquema **legacy** (`RebuildAppleMemoryMap=False`, `SetupVirtualMap=False`, `SyncRuntimePermissions=False`) — el esquema moderno cuelga tras ExitBootServices en esta placa.
+  - Booter Quirks en esquema **moderno** (`RebuildAppleMemoryMap=True`, `SetupVirtualMap=True`, `SyncRuntimePermissions=True`, `EnableWriteUnprotector=False`, `DevirtualiseMmio=False`, `ProtectUefiServices=False`) — alineado con Otus9051 (mismo CPU). Es el que ARRANCA Ventura. El cuelgue tras ExitBootServices con el moderno fue un problema de sesiones tempranas, ANTES de alinear SMBIOS/power-kexts/ACPI; ya resuelto. NO revertir a legacy.
   - `npci=0x3000` en boot-args — el BIOS HP no expone Above 4G Decoding.
   - SMBIOS `iMac20,1` (board-id `Mac-CFF7D910A743CAAF`) — recomendado por ChefKiss para NootedRed en Renoir/Lucienne.
 
